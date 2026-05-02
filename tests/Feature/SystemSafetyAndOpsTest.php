@@ -1,0 +1,77 @@
+<?php
+
+use App\Models\CashierAuditLog;
+use App\Models\Permission;
+use App\Models\RolePermissionGrant;
+use App\Models\User;
+use Illuminate\Support\Facades\Artisan;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+
+it('blocks destructive command without two-step confirmation', function () {
+    putenv('ALLOW_DESTRUCTIVE_COMMANDS=false');
+    putenv('ENABLE_DESTRUCTIVE_GUARD_IN_TESTS=true');
+
+    expect(fn () => Artisan::call('migrate:fresh'))
+        ->toThrow(\RuntimeException::class);
+});
+
+it('creates ops health snapshot audit log', function () {
+    Artisan::call('ops:health-check');
+
+    expect(CashierAuditLog::query()->where('action', 'ops_health_snapshot')->exists())->toBeTrue();
+});
+
+it('system health page follows role permission policy', function () {
+    $owner = User::factory()->create(['role' => 'owner']);
+    $cashier = User::factory()->create(['role' => 'kasir']);
+
+    actingAs($owner);
+    get(route('admin.system-health.index'))->assertOk();
+
+    actingAs($cashier);
+    get(route('admin.system-health.index'))->assertRedirect(route('dashboard'));
+});
+
+it('expires temporary role grants by schedule command', function () {
+    $grant = RolePermissionGrant::query()->create([
+        'user_id' => null,
+        'role' => 'admin',
+        'permission_code' => 'reports.export',
+        'starts_at' => now()->subDay(),
+        'expires_at' => now()->subMinute(),
+        'is_active' => true,
+    ]);
+
+    Artisan::call('rbac:expire-temp-grants');
+    $grant->refresh();
+
+    expect($grant->is_active)->toBeFalse();
+});
+
+it('owner can create and revoke temporary grant from rbac page', function () {
+    $owner = User::factory()->create(['role' => 'owner']);
+    Permission::query()->firstOrCreate(
+        ['code' => 'reports.export'],
+        ['name' => 'Reports Export', 'group' => 'reports']
+    );
+
+    actingAs($owner);
+    $res = \Pest\Laravel\post(route('admin.rbac.temp-grants.store'), [
+        'permission_code' => 'reports.export',
+        'scope_type' => 'role',
+        'role' => 'admin',
+        'duration_hours' => 24,
+        'reason' => 'Emergency export support',
+    ]);
+    $res->assertRedirect();
+
+    $grant = RolePermissionGrant::query()->latest('id')->first();
+    expect($grant)->not->toBeNull();
+    expect($grant->is_active)->toBeTrue();
+
+    \Pest\Laravel\post(route('admin.rbac.temp-grants.revoke', $grant))->assertRedirect();
+    $grant->refresh();
+    expect($grant->is_active)->toBeFalse();
+});

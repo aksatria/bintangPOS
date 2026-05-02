@@ -1,0 +1,222 @@
+@php($user = auth()->user())
+@php($isOwnerOrAdmin = $user?->hasAnyRole(['owner', 'admin']) ?? false)
+@php($canReportsView = $user?->hasPermission('reports.view') ?? false)
+@php($canStockOpnameView = $user?->hasPermission('stock-opname.view') ?? false)
+@php($canMasterData = $user?->hasPermission('master-data.manage') ?? false)
+@php($canUsersManage = $user?->hasPermission('users.manage') ?? false)
+@php($canPermissionsManage = $user?->hasPermission('permissions.manage') ?? false)
+@php($canCustomersManage = $user?->hasPermission('customers.manage') ?? false)
+@php($canCustomersFollowup = $user?->hasPermission('customers.followup.manage') ?? false)
+@php($canAuditLogsView = $user?->hasPermission('audit-logs.view') ?? false)
+@php($canStoreSettings = $user?->hasPermission('settings.store.manage') ?? false)
+@php($canNotificationSettings = $user?->hasPermission('settings.notification.manage') ?? false)
+@php($canApprovalsManage = $user?->hasPermission('approvals.manage') ?? false)
+@php($hasAnyMasterDataMenu = $canMasterData || $canUsersManage || $canCustomersManage || $canCustomersFollowup)
+@php($hasAnyControlSystemMenu = $canAuditLogsView || $canStoreSettings || $canNotificationSettings || $canPermissionsManage || $canApprovalsManage)
+@php($isMasterDataActive = request()->is('admin/categories*') || request()->is('admin/products*') || request()->is('admin/expenses*') || request()->is('admin/users*') || request()->is('backoffice/expenses*') || request()->is('backoffice/users*') || request()->routeIs('customers.*'))
+@php($isCustomerFollowupsActive = request()->routeIs('customers.followups'))
+@php($isCustomersActive = request()->routeIs('customers.*') && ! $isCustomerFollowupsActive)
+@php($isPosActive = request()->routeIs('pos.*') || request()->routeIs('sales.*'))
+@php($isStockOpnameActive = request()->routeIs('stock-opnames.*'))
+@php($isOperationalActive = $isPosActive || request()->routeIs('reports.*') || $isStockOpnameActive)
+@php($isControlSystemActive = request()->routeIs('audit-logs.*') || request()->is('admin/store-settings*') || request()->is('admin/notification-settings*') || request()->is('admin/rbac*') || request()->is('admin/approvals*'))
+
+<ul>
+    <li>
+        <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'side-menu side-menu--active' : 'side-menu' }}">
+            <div class="side-menu__icon"><i data-feather="activity"></i></div>
+            <div class="side-menu__title">Dashboard Penjualan</div>
+        </a>
+    </li>
+    @if($isOwnerOrAdmin)
+        <li>
+            <a href="javascript:;" class="{{ $isOperationalActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                <div class="side-menu__icon"><i data-feather="activity"></i></div>
+                <div class="side-menu__title">
+                    Operasional
+                    <i data-feather="chevron-down" class="side-menu__sub-icon"></i>
+                </div>
+            </a>
+            <ul class="{{ $isOperationalActive ? 'side-menu__sub-open' : '' }}">
+                <li>
+                    <a href="{{ route('pos.index') }}" class="{{ $isPosActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="shopping-cart"></i></div>
+                        <div class="side-menu__title">Point of Sale</div>
+                    </a>
+                </li>
+                @if($canReportsView)
+                <li>
+                    <a href="{{ route('reports.index') }}" class="{{ request()->routeIs('reports.*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="bar-chart-2"></i></div>
+                        <div class="side-menu__title">Laporan</div>
+                    </a>
+                </li>
+                @endif
+                @if($canStockOpnameView)
+                <li>
+                    <a href="{{ route('stock-opnames.index') }}" class="{{ $isStockOpnameActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="archive"></i></div>
+                        <div class="side-menu__title">Stock Opname</div>
+                    </a>
+                </li>
+                @endif
+            </ul>
+        </li>
+    @else
+        <li>
+            <a href="{{ route('pos.index') }}" class="{{ $isPosActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                <div class="side-menu__icon"><i data-feather="shopping-cart"></i></div>
+                <div class="side-menu__title">Point of Sale</div>
+            </a>
+        </li>
+    @endif
+
+    <li class="side-nav__devider my-6"></li>
+    @if($isOwnerOrAdmin)
+        <li>
+            <a href="javascript:;" class="{{ $isMasterDataActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                <div class="side-menu__icon"><i data-feather="database"></i></div>
+                <div class="side-menu__title">
+                    Master Data
+                    <i data-feather="chevron-down" class="side-menu__sub-icon"></i>
+                </div>
+            </a>
+            <ul class="{{ $isMasterDataActive ? 'side-menu__sub-open' : '' }}">
+                @if($hasAnyMasterDataMenu)
+                @if($canMasterData)
+                <li>
+                    <a href="{{ url('/admin/categories') }}" class="{{ request()->is('admin/categories*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="layers"></i></div>
+                        <div class="side-menu__title">Kategori</div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('/admin/products') }}" class="{{ request()->is('admin/products*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="box"></i></div>
+                        <div class="side-menu__title">Produk</div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('/admin/expenses') }}" class="{{ request()->is('admin/expenses*') || request()->is('backoffice/expenses*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="credit-card"></i></div>
+                        <div class="side-menu__title">Pengeluaran</div>
+                    </a>
+                </li>
+                @endif
+                @if($canUsersManage)
+                <li>
+                    <a href="{{ url('/admin/users') }}" class="{{ request()->is('admin/users*') || request()->is('backoffice/users*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="users"></i></div>
+                        <div class="side-menu__title">Pengguna</div>
+                    </a>
+                </li>
+                @endif
+                @if($canCustomersManage)
+                <li>
+                    <a href="{{ route('customers.index') }}" class="{{ $isCustomersActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="user-check"></i></div>
+                        <div class="side-menu__title">Pelanggan</div>
+                    </a>
+                </li>
+                @endif
+                @if($canCustomersFollowup)
+                <li>
+                    <a href="{{ route('customers.followups') }}" class="{{ $isCustomerFollowupsActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="clock"></i></div>
+                        <div class="side-menu__title">Follow-up Hari Ini</div>
+                    </a>
+                </li>
+                @endif
+                @else
+                <li>
+                    <span class="side-menu cursor-default opacity-70">
+                        <div class="side-menu__icon"><i data-feather="slash"></i></div>
+                        <div class="side-menu__title">Belum ada akses modul master data</div>
+                    </span>
+                </li>
+                @endif
+            </ul>
+        </li>
+    @endif
+
+    <li class="side-nav__devider my-6"></li>
+    @if($isOwnerOrAdmin)
+        <li>
+            <a href="javascript:;" class="{{ $isControlSystemActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                <div class="side-menu__icon"><i data-feather="shield"></i></div>
+                <div class="side-menu__title">
+                    Kontrol & Sistem
+                    <i data-feather="chevron-down" class="side-menu__sub-icon"></i>
+                </div>
+            </a>
+            <ul class="{{ $isControlSystemActive ? 'side-menu__sub-open' : '' }}">
+                @if($hasAnyControlSystemMenu)
+                @if($canAuditLogsView)
+                <li>
+                    <a href="{{ route('audit-logs.index') }}" class="{{ request()->routeIs('audit-logs.*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="clipboard"></i></div>
+                        <div class="side-menu__title">Audit Log Kasir</div>
+                    </a>
+                </li>
+                @endif
+                @if($canStoreSettings)
+                <li>
+                    <a href="{{ url('/admin/store-settings') }}" class="{{ request()->is('admin/store-settings*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="settings"></i></div>
+                        <div class="side-menu__title">Pengaturan Toko</div>
+                    </a>
+                </li>
+                @endif
+                @if($canNotificationSettings)
+                <li>
+                    <a href="{{ url('/admin/notification-settings') }}" class="{{ request()->is('admin/notification-settings*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="send"></i></div>
+                        <div class="side-menu__title">Notif Telegram</div>
+                    </a>
+                </li>
+                @endif
+                @if($canPermissionsManage)
+                <li>
+                    <a href="{{ route('admin.rbac.index') }}" class="{{ request()->is('admin/rbac*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="shield"></i></div>
+                        <div class="side-menu__title">RBAC Permission</div>
+                    </a>
+                </li>
+                @endif
+                @if($canApprovalsManage)
+                <li>
+                    <a href="{{ route('admin.approvals.index') }}" class="{{ request()->is('admin/approvals*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="check-square"></i></div>
+                        <div class="side-menu__title">Approval Queue</div>
+                    </a>
+                </li>
+                @endif
+                @else
+                <li>
+                    <span class="side-menu cursor-default opacity-70">
+                        <div class="side-menu__icon"><i data-feather="slash"></i></div>
+                        <div class="side-menu__title">Belum ada akses modul kontrol sistem</div>
+                    </span>
+                </li>
+                @endif
+            </ul>
+        </li>
+        <li class="side-nav__devider my-6"></li>
+    @endif
+
+    <li>
+        <a href="{{ route('profile.edit') }}" class="{{ request()->routeIs('profile.*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+            <div class="side-menu__icon"><i data-feather="user"></i></div>
+            <div class="side-menu__title">Profile</div>
+        </a>
+    </li>
+    <li>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button class="side-menu w-full text-left" type="submit">
+                <div class="side-menu__icon"><i data-feather="log-out"></i></div>
+                <div class="side-menu__title">Log Out</div>
+            </button>
+        </form>
+    </li>
+</ul>
