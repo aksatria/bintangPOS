@@ -26,7 +26,7 @@ Solusi POS modern, cepat, dan user-friendly khusus untuk bisnis retail dan UMKM 
 -  Customer follow-up management
 -  Tracking customer retention & repeat purchase
 
-### 💳 **Customer Debt Tracking**
+###  **Customer Debt Tracking**
 -  Manajemen hutang pelanggan (piutang)
 -  Payment plan & cicilan otomatis
 -  Payment term tracking (tanggal jatuh tempo)
@@ -34,7 +34,7 @@ Solusi POS modern, cepat, dan user-friendly khusus untuk bisnis retail dan UMKM 
 -  Debt collection reminder & alerts
 -  Export hutang per customer
 
-### 🏭 **Supplier Management**
+###  **Supplier Management**
 -  Database supplier lengkap
 -  Purchase order system
 -  Goods receipt & tracking
