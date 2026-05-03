@@ -2,7 +2,7 @@
 
 Solusi POS modern, cepat, dan user-friendly khusus untuk bisnis retail dan UMKM Indonesia. Dibangun dengan Laravel 12, mendukung multi-branch, dan dilengkapi dengan sistem manajemen lengkap (inventory, customer, supplier, laporan).
 
-**[Live Demo](http://127.0.0.1:8000)** | **[Dokumentasi](./docs)** | **[Issues](https://github.com/aksatria/bintangPOS/issues)**
+ **[Dokumentasi](./docs)** | **[Issues](https://github.com/aksatria/bintangPOS/issues)**
 
 ---
 
