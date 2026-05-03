@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ActiveBranchController;
 use App\Http\Controllers\CashierAuditLogController;
 use App\Http\Controllers\AdminMasterDataController;
 use App\Http\Controllers\ApprovalRequestController;
@@ -13,8 +14,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RbacController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
-use App\Http\Controllers\SimulationController;
 use App\Http\Controllers\StockOpnameController;
+use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\StoreSettingController;
 use App\Http\Controllers\SystemHealthController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,10 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'branch.access'])->group(function () {
+    Route::post('/context/active-branch', [ActiveBranchController::class, 'update'])
+        ->middleware('role:owner,admin')
+        ->name('context.active-branch.update');
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/export/pdf', [DashboardController::class, 'exportSnapshotPdf'])->name('dashboard.export.pdf');
     Route::get('/dashboard/audit-anomaly-status', [DashboardController::class, 'auditAnomalyStatus'])->name('dashboard.audit-anomaly-status');
@@ -113,6 +118,15 @@ Route::middleware(['auth', 'branch.access'])->group(function () {
         Route::get('/stock-opnames/{stockOpname}/export/pdf', [StockOpnameController::class, 'exportPdf'])->middleware('permission:stock-opname.view')->name('stock-opnames.export.pdf');
         Route::get('/stock-opnames/{stockOpname}/template/csv', [StockOpnameController::class, 'templateCsv'])->middleware('permission:stock-opname.manage')->name('stock-opnames.template.csv');
         Route::post('/stock-opnames/{stockOpname}/import/csv', [StockOpnameController::class, 'importCsv'])->middleware('permission:stock-opname.manage')->name('stock-opnames.import.csv');
+        Route::get('/stock-transfers', [StockTransferController::class, 'index'])->middleware('permission:stock-transfer.view')->name('stock-transfers.index');
+        Route::get('/stock-transfers/{transferId}', [StockTransferController::class, 'show'])->middleware('permission:stock-transfer.view')->name('stock-transfers.show');
+        Route::post('/stock-transfers', [StockTransferController::class, 'store'])->middleware('permission:stock-transfer.request')->name('stock-transfers.store');
+        Route::post('/stock-transfers/{transferId}/approve', [StockTransferController::class, 'approve'])->middleware('permission:stock-transfer.approve')->name('stock-transfers.approve');
+        Route::post('/stock-transfers/{transferId}/reject', [StockTransferController::class, 'reject'])->middleware('permission:stock-transfer.approve')->name('stock-transfers.reject');
+        Route::post('/stock-transfers/{transferId}/receive', [StockTransferController::class, 'receive'])->middleware('permission:stock-transfer.receive')->name('stock-transfers.receive');
+        Route::post('/stock-transfers/{transferId}/cancel', [StockTransferController::class, 'cancel'])->middleware('permission:stock-transfer.request')->name('stock-transfers.cancel');
+        Route::get('/stock-transfers/{transferId}/export/csv', [StockTransferController::class, 'exportCsv'])->middleware('permission:stock-transfer.export')->name('stock-transfers.export.csv');
+        Route::get('/stock-transfers/{transferId}/export/pdf', [StockTransferController::class, 'exportPdf'])->middleware('permission:stock-transfer.export')->name('stock-transfers.export.pdf');
         Route::get('/admin/store-settings', [StoreSettingController::class, 'edit'])->middleware('permission:settings.store.manage')->name('store-settings.edit');
         Route::put('/admin/store-settings', [StoreSettingController::class, 'update'])->middleware('permission:settings.store.manage')->name('store-settings.update');
         Route::get('/admin/store-settings/export-runtime-config', [StoreSettingController::class, 'exportRuntimeConfig'])->middleware('permission:settings.store.manage')->name('store-settings.export-runtime-config');
@@ -133,8 +147,6 @@ Route::middleware(['auth', 'branch.access'])->group(function () {
         Route::post('/admin/rbac/reset-default', [RbacController::class, 'resetDefault'])->middleware('permission:permissions.manage')->name('admin.rbac.reset-default');
         Route::post('/admin/rbac/temp-grants', [RbacController::class, 'grantTemporary'])->middleware('permission:permissions.manage')->name('admin.rbac.temp-grants.store');
         Route::post('/admin/rbac/temp-grants/{grant}/revoke', [RbacController::class, 'revokeTemporary'])->middleware('permission:permissions.manage')->name('admin.rbac.temp-grants.revoke');
-        Route::post('/admin/simulation/start', [SimulationController::class, 'start'])->middleware('permission:permissions.manage')->name('admin.simulation.start');
-        Route::post('/admin/simulation/stop', [SimulationController::class, 'stop'])->middleware('permission:permissions.manage')->name('admin.simulation.stop');
         Route::get('/admin/approvals', [ApprovalRequestController::class, 'index'])->middleware('permission:approvals.manage')->name('admin.approvals.index');
         Route::post('/admin/approvals/bulk-approve', [ApprovalRequestController::class, 'approveBulk'])->middleware('permission:approvals.manage')->name('admin.approvals.bulk-approve');
         Route::post('/admin/approvals/bulk-reject', [ApprovalRequestController::class, 'rejectBulk'])->middleware('permission:approvals.manage')->name('admin.approvals.bulk-reject');

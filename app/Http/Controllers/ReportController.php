@@ -10,6 +10,7 @@ use App\Models\Expense;
 use App\Models\ApprovalRequest;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use App\Support\TelegramNotifier;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -187,7 +188,7 @@ class ReportController extends Controller
                 'export_reason' => $exportReason,
                 'approved_by' => '',
             ],
-            (int) ($request->user()?->branch_id ?? 0),
+            (int) (ActiveBranchContext::resolveBranchId($request->user()) ?? 0),
             (bool) ($request->user()?->hasAnyRole(['owner']) ?? false)
         ), $filename);
     }
@@ -406,7 +407,7 @@ class ReportController extends Controller
 
         if (! $existingPending) {
             $approval = ApprovalRequest::query()->create([
-                'branch_id' => $request->user()?->branch_id,
+                'branch_id' => ActiveBranchContext::resolveBranchId($request->user()),
                 'type' => "report.export.$format",
                 'status' => 'pending',
                 'requested_by' => (int) ($request->user()?->id ?? 0),

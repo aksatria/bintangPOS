@@ -64,6 +64,10 @@ class StoreSettingController extends Controller
             'approval_business_end' => ['required', 'date_format:H:i'],
             'approval_business_workdays' => ['nullable', 'string', 'max:40'],
             'approval_reject_reason_presets' => ['nullable', 'string', 'max:1000'],
+            'stock_transfer_kpi_overdue_warning_count' => ['required', 'integer', 'min:1', 'max:1000'],
+            'stock_transfer_kpi_approve_sla_minutes' => ['required', 'integer', 'min:5', 'max:10080'],
+            'stock_transfer_kpi_receive_sla_minutes' => ['required', 'integer', 'min:5', 'max:10080'],
+            'stock_transfer_kpi_discrepancy_warning_pct' => ['required', 'numeric', 'min:0', 'max:100'],
             'promo_sku' => ['nullable', 'array'],
             'promo_sku.*' => ['nullable', 'string', 'max:100'],
             'promo_buy_qty' => ['nullable', 'array'],
@@ -113,6 +117,12 @@ class StoreSettingController extends Controller
                     ->filter(fn ($x) => $x !== '')
                     ->values()
                     ->all(),
+                'stock_transfer_kpi' => [
+                    'overdue_warning_count' => (int) $validated['stock_transfer_kpi_overdue_warning_count'],
+                    'approve_sla_minutes' => (int) $validated['stock_transfer_kpi_approve_sla_minutes'],
+                    'receive_sla_minutes' => (int) $validated['stock_transfer_kpi_receive_sla_minutes'],
+                    'discrepancy_warning_pct' => (float) $validated['stock_transfer_kpi_discrepancy_warning_pct'],
+                ],
             ],
             'promo_buy_x_get_y_rules' => $this->parsePromoRows(
                 (array) ($validated['promo_sku'] ?? []),

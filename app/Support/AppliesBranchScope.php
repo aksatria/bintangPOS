@@ -9,17 +9,20 @@ trait AppliesBranchScope
 {
     protected function applyBranchScope(Builder $query, ?User $user, ?string $table = null): Builder
     {
-        if (! $user || $user->hasAnyRole(['owner'])) {
+        if (! $user) {
             return $query;
         }
 
-        if (! $user->branch_id) {
+        $branchId = ActiveBranchContext::resolveBranchId($user);
+        if (! $branchId) {
             return $query;
         }
 
         $column = ($table ? $table.'.' : '').'branch_id';
 
-        return $query->where($column, $user->branch_id);
+        return $query->where(function ($q) use ($column, $branchId) {
+            $q->where($column, $branchId)
+                ->orWhereNull($column);
+        });
     }
 }
-

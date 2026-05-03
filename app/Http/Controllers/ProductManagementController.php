@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -79,7 +80,7 @@ class ProductManagementController extends Controller
         if ($request->hasFile('image')) {
             $payload['image'] = $request->file('image')->store('products', 'public');
         }
-        $payload['branch_id'] = $request->user()?->branch_id;
+        $payload['branch_id'] = ActiveBranchContext::resolveBranchId($request->user());
 
         $product = Product::query()->create($payload);
         $product->load('category:id,name');

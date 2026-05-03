@@ -8,6 +8,7 @@ use App\Models\StoreSetting;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
 use App\Models\User;
+use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use App\Support\TelegramNotifier;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -88,7 +89,7 @@ class StockOpnameController extends Controller
             $code = 'OPN-'.now()->format('Ymd-His').'-'.strtoupper(substr((string) str()->uuid(), 0, 5));
             $session = StockOpname::query()->create([
                 'user_id' => $request->user()->id,
-                'branch_id' => $request->user()->branch_id,
+                'branch_id' => ActiveBranchContext::resolveBranchId($request->user()),
                 'code' => $code,
                 'status' => 'open',
                 'note' => trim((string) ($payload['note'] ?? '')),
@@ -336,7 +337,7 @@ class StockOpnameController extends Controller
             $code = 'OPN-'.now()->format('Ymd-His').'-'.strtoupper(substr((string) str()->uuid(), 0, 5));
             $session = StockOpname::query()->create([
                 'user_id' => $request->user()->id,
-                'branch_id' => $request->user()->branch_id,
+                'branch_id' => ActiveBranchContext::resolveBranchId($request->user()),
                 'code' => $code,
                 'status' => 'open',
                 'note' => trim('Duplikasi dari '.$stockOpname->code),

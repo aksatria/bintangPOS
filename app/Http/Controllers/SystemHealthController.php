@@ -8,6 +8,7 @@ use App\Support\AppliesBranchScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 
 class SystemHealthController extends Controller
 {
@@ -30,6 +31,10 @@ class SystemHealthController extends Controller
             ->where('action', 'ops_health_snapshot')
             ->latest('id')
             ->first();
+        $lastSchedulerHeartbeat = Cache::get('ops.scheduler.heartbeat_at');
+        $schedulerAgeMinutes = $lastSchedulerHeartbeat ? now()->diffInMinutes(\Illuminate\Support\Carbon::parse((string) $lastSchedulerHeartbeat)) : null;
+        $lastBackup = CashierAuditLog::query()->where('action', 'database_backup_created')->latest('id')->first();
+        $lastDrill = CashierAuditLog::query()->where('action', 'disaster_recovery_drill_completed')->latest('id')->first();
 
         return view('admin.system-health', [
             'metrics' => [
@@ -38,8 +43,12 @@ class SystemHealthController extends Controller
                 'pending_approvals' => $pendingApprovals,
                 'overdue_approvals' => $overdueApprovals,
                 'critical_errors_1h' => $criticalErrors1h,
+                'scheduler_age_minutes' => $schedulerAgeMinutes,
             ],
             'lastHealth' => $lastHealth,
+            'lastSchedulerHeartbeat' => $lastSchedulerHeartbeat,
+            'lastBackup' => $lastBackup,
+            'lastDrill' => $lastDrill,
         ]);
     }
 

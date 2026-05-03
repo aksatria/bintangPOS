@@ -442,6 +442,58 @@
         </div>
         @endif
 
+        @if($isManager)
+        <div class="db-panel mt-6 intro-y">
+            <div class="db-panel-head">
+                <div>
+                    <h3 class="db-panel-title">KPI Mutasi Per Cabang (30 Hari)</h3>
+                    <p class="db-panel-subtitle">Aging mutasi, SLA approve/receive, dan discrepancy rate per cabang asal.</p>
+                </div>
+            </div>
+            <div class="db-panel-body overflow-x-auto">
+                <table class="table-ui w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Cabang Asal</th>
+                            <th class="text-left">Total Mutasi</th>
+                            <th class="text-left">Overdue</th>
+                            <th class="text-left">Avg SLA Approve</th>
+                            <th class="text-left">Avg SLA Receive</th>
+                            <th class="text-left">Discrepancy Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse(($branchTransferKpis ?? collect()) as $kpi)
+                            @php
+                                $th = (array) ($kpi['thresholds'] ?? []);
+                                $overdueWarn = (int) ($th['overdue_warning_count'] ?? 3);
+                                $approveWarn = (int) ($th['approve_sla_minutes'] ?? 60);
+                                $receiveWarn = (int) ($th['receive_sla_minutes'] ?? 180);
+                                $discWarn = (float) ($th['discrepancy_warning_pct'] ?? 5);
+                                $isOverdueWarn = (int) $kpi['overdue_transfer'] >= $overdueWarn;
+                                $isApproveWarn = $kpi['avg_approve_minutes'] !== null && (float) $kpi['avg_approve_minutes'] > $approveWarn;
+                                $isReceiveWarn = $kpi['avg_receive_minutes'] !== null && (float) $kpi['avg_receive_minutes'] > $receiveWarn;
+                                $isDiscWarn = (float) $kpi['discrepancy_rate'] > $discWarn;
+                            @endphp
+                            <tr>
+                                <td class="font-semibold">{{ $kpi['branch_name'] }}</td>
+                                <td>{{ number_format((int) $kpi['total_transfer'], 0, ',', '.') }}</td>
+                                <td class="{{ $isOverdueWarn ? 'text-rose-700 font-semibold' : '' }}">{{ number_format((int) $kpi['overdue_transfer'], 0, ',', '.') }}</td>
+                                <td class="{{ $isApproveWarn ? 'text-rose-700 font-semibold' : '' }}">{{ $kpi['avg_approve_minutes'] !== null ? number_format((float) $kpi['avg_approve_minutes'], 1, ',', '.') . ' menit' : '-' }}</td>
+                                <td class="{{ $isReceiveWarn ? 'text-rose-700 font-semibold' : '' }}">{{ $kpi['avg_receive_minutes'] !== null ? number_format((float) $kpi['avg_receive_minutes'], 1, ',', '.') . ' menit' : '-' }}</td>
+                                <td class="{{ $isDiscWarn ? 'text-rose-700 font-semibold' : '' }}">{{ number_format((float) $kpi['discrepancy_rate'], 2, ',', '.') }}%</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-slate-500">Belum ada data mutasi pada 30 hari terakhir.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
         <div class="db-top-grid mt-6">
             <div class="db-top-main intro-y">
                 <div class="db-panel db-panel-equal">

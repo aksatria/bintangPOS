@@ -22,6 +22,11 @@
             ? asset('storage/' . $storeBrand->logo)
             : asset('dist/images/logo.svg');
         $storeName = $storeBrand?->name ?: 'BINTANG';
+        $activeBranchName = null;
+        if (auth()->check()) {
+            $activeBranchId = \App\Support\ActiveBranchContext::resolveBranchId(auth()->user());
+            $activeBranchName = \App\Models\Branch::query()->whereKey($activeBranchId)->value('name');
+        }
     @endphp
     <div class="mobile-menu md:hidden" x-data="{ open: false }">
         <div class="mobile-menu-bar">
@@ -60,7 +65,7 @@
         </nav>
 
         <div class="content">
-            <div class="top-bar">
+            <div class="top-bar app-topbar">
                 <div class="-intro-x breadcrumb mr-auto hidden sm:flex">
                     <a href="{{ route('dashboard') }}">Application</a>
                     <i data-feather="chevron-right" class="breadcrumb__icon"></i>
@@ -91,11 +96,13 @@
                     </a>
                 </div>
 
-                <div class="intro-x relative mr-3 sm:mr-6">
-                    <div class="search hidden sm:block">
-                        <input type="text" class="search__input input placeholder-theme-13" placeholder="Search...">
-                        <i data-feather="search" class="search__icon"></i>
-                    </div>
+                <div class="intro-x app-topbar-meta hidden sm:flex">
+                    @if($activeBranchName)
+                        <span class="app-branch-badge">
+                            <i data-feather="map-pin" class="w-3.5 h-3.5"></i>
+                            <span>{{ $activeBranchName }}</span>
+                        </span>
+                    @endif
                 </div>
 
                 <div class="intro-x dropdown w-8 h-8 relative">
@@ -105,45 +112,15 @@
                 </div>
             </div>
 
-            @php
-                $simId = (int) session('simulation_user_id', 0);
-                $simName = (string) session('simulation_user_name', '');
-                $simRole = (string) session('simulation_role', '');
-                $canSimulate = auth()->user()?->hasAnyRole(['owner']) ?? false;
-                $simUsers = $canSimulate ? \App\Models\User::query()->orderBy('name')->limit(20)->get(['id','name','role']) : collect();
-            @endphp
-            @if($canSimulate)
-                <div class="mb-3 rounded-xl border {{ $simId > 0 ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50' }} px-3 py-2 flex flex-wrap items-center gap-2">
-                    @if($simId > 0)
-                        <span class="text-xs font-semibold text-amber-800">Simulation aktif: {{ $simName }} ({{ strtoupper($simRole) }}) - read-only</span>
-                        <form method="POST" action="{{ route('admin.simulation.stop') }}">
-                            @csrf
-                            <button class="text-xs px-2 py-1 rounded border border-amber-300 bg-white text-amber-800 font-semibold">Matikan</button>
-                        </form>
-                    @else
-                        <span class="text-xs font-semibold text-slate-700">Permission Simulation (read-only)</span>
-                        <form method="POST" action="{{ route('admin.simulation.start') }}" class="flex items-center gap-2">
-                            @csrf
-                            <select name="user_id" class="text-xs border border-slate-300 rounded px-2 py-1.5">
-                                @foreach($simUsers as $u)
-                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ strtoupper((string) ($u->role?->value ?? $u->role ?? '-')) }})</option>
-                                @endforeach
-                            </select>
-                            <button class="text-xs px-2 py-1 rounded border border-slate-300 bg-white text-slate-700 font-semibold">Simulasikan</button>
-                        </form>
-                    @endif
-                </div>
-            @endif
-
             @if (session('success'))
-                <div class="alert alert-primary show mb-2" role="alert">{{ session('success') }}</div>
+                <div class="alert alert-primary show mb-3 app-alert app-alert--success" role="alert">{{ session('success') }}</div>
             @endif
             @if (session('error'))
-                <div class="alert alert-danger show mb-2" role="alert">{{ session('error') }}</div>
+                <div class="alert alert-danger show mb-3 app-alert app-alert--danger" role="alert">{{ session('error') }}</div>
             @endif
 
             @if (session('stock_warning'))
-                <div class="alert alert-warning show mb-2" role="alert">Stok menipis: {{ implode(', ', session('stock_warning')) }}</div>
+                <div class="alert alert-warning show mb-3 app-alert app-alert--warning" role="alert">Stok menipis: {{ implode(', ', session('stock_warning')) }}</div>
             @endif
 
             @isset($header)

@@ -10,6 +10,7 @@ use App\Models\Sale;
 use App\Models\SaleRefundItem;
 use App\Models\User;
 use App\Models\StoreSetting;
+use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use App\Support\TelegramNotifier;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -191,7 +192,7 @@ class SaleController extends Controller
         }
 
         ApprovalRequest::query()->create([
-            'branch_id' => $request->user()?->branch_id,
+            'branch_id' => ActiveBranchContext::resolveBranchId($request->user()),
             'type' => 'sale.quick_refund',
             'status' => 'pending',
             'requested_by' => (int) $request->user()->id,
@@ -273,7 +274,7 @@ class SaleController extends Controller
         }
 
         ApprovalRequest::query()->create([
-            'branch_id' => $request->user()?->branch_id,
+            'branch_id' => ActiveBranchContext::resolveBranchId($request->user()),
             'type' => 'sale.quick_void',
             'status' => 'pending',
             'requested_by' => (int) $request->user()->id,

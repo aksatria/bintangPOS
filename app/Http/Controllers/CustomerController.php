@@ -11,6 +11,7 @@ use App\Models\Customer;
 use App\Models\CustomerFollowUp;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
@@ -33,7 +34,7 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatePayload($request);
-        $data['branch_id'] = (int) ($request->user()?->branch_id ?? 0) ?: null;
+        $data['branch_id'] = ActiveBranchContext::resolveBranchId($request->user());
         Customer::query()->create($data);
 
         return redirect()->route('customers.index')->with('success', 'Pelanggan berhasil ditambahkan.');
@@ -99,7 +100,7 @@ class CustomerController extends Controller
         return Excel::download(new CustomersExport(
             $q,
             $segment,
-            (int) ($request->user()?->branch_id ?? 0),
+            (int) (ActiveBranchContext::resolveBranchId($request->user()) ?? 0),
             (bool) ($request->user()?->hasAnyRole(['owner']) ?? false),
         ), $filename);
     }
@@ -117,7 +118,7 @@ class CustomerController extends Controller
             $segment,
             $pending,
             $preset,
-            (int) ($request->user()?->branch_id ?? 0),
+            (int) (ActiveBranchContext::resolveBranchId($request->user()) ?? 0),
             (bool) ($request->user()?->hasAnyRole(['owner']) ?? false),
         ), $filename);
     }
@@ -223,7 +224,7 @@ class CustomerController extends Controller
 
         return Excel::download(new CustomerPurchaseHistoryExport(
             $customer,
-            (int) ($request->user()?->branch_id ?? 0),
+            (int) (ActiveBranchContext::resolveBranchId($request->user()) ?? 0),
             (bool) ($request->user()?->hasAnyRole(['owner']) ?? false),
         ), $filename);
     }
@@ -426,7 +427,7 @@ class CustomerController extends Controller
         $customer->save();
 
         $followUp = CustomerFollowUp::query()->create([
-            'branch_id' => (int) (auth()->user()?->branch_id ?? 0) ?: null,
+            'branch_id' => ActiveBranchContext::resolveBranchId(auth()->user()),
             'customer_id' => $customer->id,
             'created_by' => auth()->id(),
             'action_type' => $actionType,
@@ -456,7 +457,7 @@ class CustomerController extends Controller
     public function quickCreateFollowUp(Customer $customer)
     {
         $followUp = CustomerFollowUp::query()->create([
-            'branch_id' => (int) (auth()->user()?->branch_id ?? 0) ?: null,
+            'branch_id' => ActiveBranchContext::resolveBranchId(auth()->user()),
             'customer_id' => $customer->id,
             'created_by' => auth()->id(),
             'action_type' => 'note',

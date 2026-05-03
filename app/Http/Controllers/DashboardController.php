@@ -13,7 +13,10 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StoreSetting;
 use App\Models\User;
+use App\Models\StockTransfer;
+use App\Models\Branch;
 use App\Support\TelegramNotifier;
+use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -503,6 +506,8 @@ class DashboardController extends Controller
             ];
         }
 
+        $branchTransferKpis = $this->buildBranchTransferKpis(auth()->user());
+
         session()->put($prefKey, [
             'preset' => $preset,
             'start_date' => $startDate->toDateString(),
@@ -570,7 +575,79 @@ class DashboardController extends Controller
             'checkoutFailAcknowledged' => $checkoutFailAcknowledged,
             'followupSummary' => $followupSummary,
             'cashReconSummary' => $cashReconSummary,
+            'branchTransferKpis' => $branchTransferKpis,
         ]];
+    }
+
+    private function buildBranchTransferKpis(?User $user)
+    {
+        $activeBranchId = (int) (ActiveBranchContext::resolveBranchId($user) ?? 0);
+        $isOwner = $user?->hasAnyRole(['owner']) ?? false;
+        $approvalRules = (array) (StoreSetting::query()->first()?->approval_rules ?? []);
+        $thresholdOverdue = max(1, (int) data_get($approvalRules, 'stock_transfer_kpi.overdue_warning_count', 3));
+        $thresholdApproveSla = max(5, (int) data_get($approvalRules, 'stock_transfer_kpi.approve_sla_minutes', 60));
+        $thresholdReceiveSla = max(5, (int) data_get($approvalRules, 'stock_transfer_kpi.receive_sla_minutes', 180));
+        $thresholdDiscrepancyPct = max(0, min(100, (float) data_get($approvalRules, 'stock_transfer_kpi.discrepancy_warning_pct', 5)));
+
+        $query = StockTransfer::query()
+            ->with(['items:id,stock_transfer_id,requested_qty,received_qty'])
+            ->where('created_at', '>=', now()->subDays(30));
+
+        if (! $isOwner && $activeBranchId > 0) {
+            $query->where(function ($q) use ($activeBranchId) {
+                $q->where('source_branch_id', $activeBranchId)
+                    ->orWhere('destination_branch_id', $activeBranchId);
+            });
+        }
+
+        $transfers = $query->get();
+        if ($transfers->isEmpty()) {
+            return collect();
+        }
+
+        $branchIds = $transfers->pluck('source_branch_id')->filter()->unique()->values();
+        $branchNames = Branch::query()->whereIn('id', $branchIds)->pluck('name', 'id');
+
+        return $transfers
+            ->groupBy('source_branch_id')
+            ->map(function ($rows, $branchId) use ($branchNames, $thresholdOverdue, $thresholdApproveSla, $thresholdReceiveSla, $thresholdDiscrepancyPct) {
+                $approveMinutes = $rows
+                    ->filter(fn ($t) => $t->approved_at && $t->created_at)
+                    ->map(fn ($t) => $t->created_at->diffInMinutes($t->approved_at))
+                    ->values();
+                $receiveMinutes = $rows
+                    ->filter(fn ($t) => $t->received_at && $t->approved_at)
+                    ->map(fn ($t) => $t->approved_at->diffInMinutes($t->received_at))
+                    ->values();
+                $receivedItems = $rows
+                    ->where('status', StockTransfer::STATUS_RECEIVED)
+                    ->flatMap(fn ($t) => $t->items)
+                    ->filter(fn ($item) => $item->received_qty !== null)
+                    ->values();
+                $discrepancyItems = $receivedItems
+                    ->filter(fn ($item) => (int) $item->received_qty !== (int) $item->requested_qty)
+                    ->count();
+
+                return [
+                    'branch_name' => (string) ($branchNames[(int) $branchId] ?? ('Branch #'.$branchId)),
+                    'total_transfer' => (int) $rows->count(),
+                    'overdue_transfer' => (int) $rows
+                        ->whereIn('status', [StockTransfer::STATUS_REQUESTED, StockTransfer::STATUS_APPROVED])
+                        ->filter(fn ($t) => optional($t->created_at)->lte(now()->subHours(24)))
+                        ->count(),
+                    'avg_approve_minutes' => $approveMinutes->isNotEmpty() ? (float) round($approveMinutes->avg(), 1) : null,
+                    'avg_receive_minutes' => $receiveMinutes->isNotEmpty() ? (float) round($receiveMinutes->avg(), 1) : null,
+                    'discrepancy_rate' => $receivedItems->count() > 0 ? (float) round(($discrepancyItems / $receivedItems->count()) * 100, 2) : 0.0,
+                    'thresholds' => [
+                        'overdue_warning_count' => $thresholdOverdue,
+                        'approve_sla_minutes' => $thresholdApproveSla,
+                        'receive_sla_minutes' => $thresholdReceiveSla,
+                        'discrepancy_warning_pct' => $thresholdDiscrepancyPct,
+                    ],
+                ];
+            })
+            ->sortByDesc('total_transfer')
+            ->values();
     }
 
     public static function compactRupiah(float|int $value): string

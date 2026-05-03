@@ -9,6 +9,11 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schedule;
+use App\Models\Branch;
+use App\Models\User;
+use App\Models\StockTransfer;
+use App\Models\StockTransferItem;
+use Illuminate\Support\Facades\Hash;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -227,8 +232,10 @@ Schedule::command('approval:send-sla-anomaly-alert')->everyTenMinutes();
 Schedule::command('approval:auto-expire')->everyFifteenMinutes();
 Schedule::command('telegram:send-weekly-sla-report')->weeklyOn(1, '08:00');
 Schedule::command('ops:health-check --telegram')->everyTenMinutes();
+Schedule::command('ops:scheduler-heartbeat')->everyMinute();
 Schedule::command('ops:drill-disaster-recovery --staging')->monthlyOn(1, '04:30');
 Schedule::command('ops:recovery-pack --staging --telegram')->monthlyOn(1, '05:00');
+Schedule::command('stock-transfer:send-aging-alert')->hourly();
 
 Artisan::command('data:diversify-payment-methods {--limit=0}', function () {
     $limit = max(0, (int) $this->option('limit'));
@@ -282,3 +289,133 @@ Artisan::command('data:diversify-payment-methods {--limit=0}', function () {
         $this->line('- '.strtoupper((string) $row->method).': '.(int) $row->total);
     }
 })->purpose('Membuat variasi metode pembayaran transaksi paid agar laporan tidak hanya cash.');
+
+Artisan::command('demo:seed-stock-transfers
+    {--count=10 : Jumlah transfer yang dibuat}
+    {--source=PUSAT : Kode cabang sumber}
+    {--destination=SBY : Kode cabang tujuan}
+    {--reset : Hapus transfer demo lama untuk rute yang sama sebelum generate}', function () {
+    $count = max(1, (int) $this->option('count'));
+    $sourceCode = strtoupper(trim((string) $this->option('source')));
+    $destinationCode = strtoupper(trim((string) $this->option('destination')));
+
+    if ($sourceCode === $destinationCode) {
+        $this->error('Source dan destination tidak boleh sama.');
+        return;
+    }
+
+    $source = Branch::query()->firstOrCreate(
+        ['code' => $sourceCode],
+        ['name' => ucfirst(strtolower($sourceCode)), 'is_active' => true]
+    );
+    $destination = Branch::query()->firstOrCreate(
+        ['code' => $destinationCode],
+        ['name' => ucfirst(strtolower($destinationCode)), 'is_active' => true]
+    );
+
+    if ((bool) $this->option('reset')) {
+        $prefix = "TRF-DEMO-{$sourceCode}-{$destinationCode}-%";
+        $transferIds = StockTransfer::query()
+            ->where('code', 'like', $prefix)
+            ->pluck('id');
+
+        if ($transferIds->isNotEmpty()) {
+            StockTransferItem::query()->whereIn('stock_transfer_id', $transferIds)->delete();
+            StockTransfer::query()->whereIn('id', $transferIds)->delete();
+            $this->warn("Data lama dibersihkan: {$transferIds->count()} transfer.");
+        } else {
+            $this->line('Tidak ada data demo lama yang perlu dibersihkan.');
+        }
+    }
+
+    $requester = User::query()->updateOrCreate(
+        ['email' => 'admin.' . strtolower($sourceCode) . '.demo@local.test'],
+        [
+            'name' => 'Admin ' . $sourceCode . ' Demo',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            'branch_id' => $source->id,
+        ]
+    );
+    $receiver = User::query()->updateOrCreate(
+        ['email' => 'admin.' . strtolower($destinationCode) . '.demo@local.test'],
+        [
+            'name' => 'Admin ' . $destinationCode . ' Demo',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            'branch_id' => $destination->id,
+        ]
+    );
+
+    $products = Product::query()
+        ->where('branch_id', $source->id)
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->limit(30)
+        ->get(['id', 'sku', 'name', 'unit']);
+
+    if ($products->count() < 3) {
+        $this->error('Produk cabang sumber kurang dari 3. Tambah produk dulu di cabang sumber.');
+        return;
+    }
+
+    $statuses = [
+        StockTransfer::STATUS_RECEIVED,
+        StockTransfer::STATUS_RECEIVED,
+        StockTransfer::STATUS_APPROVED,
+        StockTransfer::STATUS_REQUESTED,
+        StockTransfer::STATUS_REJECTED,
+        StockTransfer::STATUS_CANCELLED,
+    ];
+
+    $created = 0;
+    for ($i = 1; $i <= $count; $i++) {
+        $status = $statuses[($i - 1) % count($statuses)];
+        $seq = str_pad((string) $i, 3, '0', STR_PAD_LEFT);
+        $code = "TRF-DEMO-{$sourceCode}-{$destinationCode}-{$seq}";
+
+        $transfer = StockTransfer::query()->updateOrCreate(
+            ['code' => $code],
+            [
+                'source_branch_id' => $source->id,
+                'destination_branch_id' => $destination->id,
+                'requested_by' => $requester->id,
+                'approved_by' => in_array($status, [StockTransfer::STATUS_APPROVED, StockTransfer::STATUS_RECEIVED, StockTransfer::STATUS_REJECTED], true) ? $receiver->id : null,
+                'received_by' => $status === StockTransfer::STATUS_RECEIVED ? $receiver->id : null,
+                'status' => $status,
+                'note' => "Demo transfer {$seq}",
+                'delivery_ref' => "SJ-{$sourceCode}-{$destinationCode}-{$seq}",
+                'courier_name' => 'Kurir Internal',
+                'reject_reason' => $status === StockTransfer::STATUS_REJECTED ? 'Stok tujuan masih aman.' : null,
+                'approved_at' => in_array($status, [StockTransfer::STATUS_APPROVED, StockTransfer::STATUS_RECEIVED, StockTransfer::STATUS_REJECTED], true) ? now()->subDays($i) : null,
+                'received_at' => $status === StockTransfer::STATUS_RECEIVED ? now()->subDays($i)->addHours(2) : null,
+            ]
+        );
+
+        StockTransferItem::query()->where('stock_transfer_id', $transfer->id)->delete();
+        foreach ($products->shuffle()->take(3) as $p) {
+            $qty = random_int(5, 50);
+            StockTransferItem::query()->create([
+                'stock_transfer_id' => $transfer->id,
+                'source_product_id' => $p->id,
+                'sku' => (string) $p->sku,
+                'product_name' => (string) $p->name,
+                'unit' => (string) $p->unit,
+                'requested_qty' => $qty,
+                'received_qty' => $status === StockTransfer::STATUS_RECEIVED ? $qty : null,
+            ]);
+        }
+        $created++;
+    }
+
+    $this->info("Selesai generate {$created} transfer demo {$sourceCode} -> {$destinationCode}.");
+    $summary = StockTransfer::query()
+        ->where('code', 'like', "TRF-DEMO-{$sourceCode}-{$destinationCode}-%")
+        ->selectRaw('status, COUNT(*) as total')
+        ->groupBy('status')
+        ->orderByDesc('total')
+        ->get();
+    foreach ($summary as $row) {
+        $this->line('- ' . strtoupper((string) $row->status) . ': ' . (int) $row->total);
+    }
+})->purpose('Generate batch transfer demo antar cabang dengan parameter dinamis.');

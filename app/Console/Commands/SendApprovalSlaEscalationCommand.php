@@ -37,6 +37,7 @@ class SendApprovalSlaEscalationCommand extends Command
             $approvalRules = is_array($store?->approval_rules) ? $store->approval_rules : [];
             $saleSla = max(5, (int) data_get($approvalRules, 'sla_minutes_sale', 120));
             $exportSla = max(5, (int) data_get($approvalRules, 'sla_minutes_export', 360));
+            $hasBusinessHoursConfig = is_array(data_get($approvalRules, 'business_hours'));
             $businessHourRules = [
                 'start' => (string) data_get($approvalRules, 'business_hours.start', '08:00'),
                 'end' => (string) data_get($approvalRules, 'business_hours.end', '22:00'),
@@ -77,7 +78,9 @@ class SendApprovalSlaEscalationCommand extends Command
                 }
                 $baseThreshold = max(5, $baseThreshold);
 
-                $ageMinutes = BusinessHourSla::diffInBusinessMinutes($approval->created_at, now(), $businessHourRules);
+                $ageMinutes = $hasBusinessHoursConfig
+                    ? BusinessHourSla::diffInBusinessMinutes($approval->created_at, now(), $businessHourRules)
+                    : (int) $approval->created_at->diffInMinutes(now());
                 if ($ageMinutes < $baseThreshold) {
                     continue;
                 }

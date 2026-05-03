@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ActiveBranchContext;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -12,11 +13,14 @@ class EnsureBranchRouteAccess
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (! $user || $user->hasAnyRole(['owner'])) {
+        if (! $user) {
+            return $next($request);
+        }
+        if ($user->hasAnyRole(['owner'])) {
             return $next($request);
         }
 
-        $actorBranchId = $user->branch_id ? (int) $user->branch_id : null;
+        $actorBranchId = ActiveBranchContext::resolveBranchId($user);
         if (! $actorBranchId) {
             return $next($request);
         }
@@ -44,4 +48,3 @@ class EnsureBranchRouteAccess
         return $next($request);
     }
 }
-

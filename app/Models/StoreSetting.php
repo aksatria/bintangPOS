@@ -45,6 +45,12 @@ class StoreSetting extends Model
             'Butuh dokumen pendukung',
             'Melebihi kebijakan toko',
         ],
+        'stock_transfer_kpi' => [
+            'overdue_warning_count' => 3,
+            'approve_sla_minutes' => 60,
+            'receive_sla_minutes' => 180,
+            'discrepancy_warning_pct' => 5,
+        ],
     ];
 
     protected $fillable = [
@@ -190,6 +196,12 @@ class StoreSetting extends Model
                 ->take(10)
                 ->values()
                 ->all(),
+            'stock_transfer_kpi' => [
+                'overdue_warning_count' => max(1, (int) data_get($approvalRules, 'stock_transfer_kpi.overdue_warning_count', 3)),
+                'approve_sla_minutes' => max(5, (int) data_get($approvalRules, 'stock_transfer_kpi.approve_sla_minutes', 60)),
+                'receive_sla_minutes' => max(5, (int) data_get($approvalRules, 'stock_transfer_kpi.receive_sla_minutes', 180)),
+                'discrepancy_warning_pct' => max(0, min(100, (float) data_get($approvalRules, 'stock_transfer_kpi.discrepancy_warning_pct', 5))),
+            ],
         ];
 
         $promoRules = $data['promo_buy_x_get_y_rules'] ?? self::DEFAULT_BUY_X_GET_Y_RULES;

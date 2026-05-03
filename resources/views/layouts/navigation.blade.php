@@ -1,7 +1,10 @@
 @php($user = auth()->user())
+@php($activeBranchId = \App\Support\ActiveBranchContext::resolveBranchId($user))
+@php($availableBranches = \App\Support\ActiveBranchContext::availableBranchesFor($user))
 @php($isOwnerOrAdmin = $user?->hasAnyRole(['owner', 'admin']) ?? false)
 @php($canReportsView = $user?->hasPermission('reports.view') ?? false)
 @php($canStockOpnameView = $user?->hasPermission('stock-opname.view') ?? false)
+@php($canTransferView = $user?->hasPermission('stock-transfer.view') ?? false)
 @php($canMasterData = $user?->hasPermission('master-data.manage') ?? false)
 @php($canUsersManage = $user?->hasPermission('users.manage') ?? false)
 @php($canPermissionsManage = $user?->hasPermission('permissions.manage') ?? false)
@@ -18,10 +21,27 @@
 @php($isCustomersActive = request()->routeIs('customers.*') && ! $isCustomerFollowupsActive)
 @php($isPosActive = request()->routeIs('pos.*') || request()->routeIs('sales.*'))
 @php($isStockOpnameActive = request()->routeIs('stock-opnames.*'))
-@php($isOperationalActive = $isPosActive || request()->routeIs('reports.*') || $isStockOpnameActive)
+@php($isStockTransferActive = request()->routeIs('stock-transfers.*'))
+@php($isOperationalActive = $isPosActive || request()->routeIs('reports.*') || $isStockOpnameActive || $isStockTransferActive)
 @php($isControlSystemActive = request()->routeIs('audit-logs.*') || request()->is('admin/store-settings*') || request()->is('admin/notification-settings*') || request()->is('admin/rbac*') || request()->is('admin/approvals*'))
 
 <ul>
+    @if($isOwnerOrAdmin && $availableBranches->isNotEmpty())
+        <li class="mb-4">
+            <form method="POST" action="{{ route('context.active-branch.update') }}" class="px-3 app-branch-switcher">
+                @csrf
+                <label for="active_branch_id" class="app-branch-switcher__label">Cabang Aktif</label>
+                <select id="active_branch_id" name="branch_id" class="app-branch-switcher__select" onchange="this.form.submit()">
+                    @foreach($availableBranches as $branch)
+                        <option value="{{ $branch->id }}" @selected((int) $activeBranchId === (int) $branch->id)>
+                            {{ $branch->name }} ({{ $branch->code }})
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+        </li>
+    @endif
+
     <li>
         <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'side-menu side-menu--active' : 'side-menu' }}">
             <div class="side-menu__icon"><i data-feather="activity"></i></div>
@@ -57,6 +77,14 @@
                     <a href="{{ route('stock-opnames.index') }}" class="{{ $isStockOpnameActive ? 'side-menu side-menu--active' : 'side-menu' }}">
                         <div class="side-menu__icon"><i data-feather="archive"></i></div>
                         <div class="side-menu__title">Stock Opname</div>
+                    </a>
+                </li>
+                @endif
+                @if($canTransferView)
+                <li>
+                    <a href="{{ route('stock-transfers.index') }}" class="{{ $isStockTransferActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="repeat"></i></div>
+                        <div class="side-menu__title">Mutasi Antar Cabang</div>
                     </a>
                 </li>
                 @endif

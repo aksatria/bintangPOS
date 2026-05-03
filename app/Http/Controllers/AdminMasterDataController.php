@@ -9,6 +9,7 @@ use App\Models\Expense;
 use App\Models\RolePermissionGrant;
 use App\Models\StoreSetting;
 use App\Models\User;
+use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -193,7 +194,7 @@ class AdminMasterDataController extends Controller
 
         $expense = Expense::query()->create([
             'user_id' => $request->user()?->id,
-            'branch_id' => $request->user()?->branch_id,
+            'branch_id' => ActiveBranchContext::resolveBranchId($request->user()),
             'category' => (string) $validated['category'],
             'title' => trim((string) $validated['title']),
             'amount' => (float) $validated['amount'],
@@ -301,7 +302,7 @@ class AdminMasterDataController extends Controller
     {
         $copy = Expense::query()->create([
             'user_id' => $request->user()?->id,
-            'branch_id' => $request->user()?->branch_id,
+            'branch_id' => ActiveBranchContext::resolveBranchId($request->user()),
             'category' => (string) ($expense->category ?: 'Operasional'),
             'title' => (string) $expense->title . ' (Copy)',
             'amount' => (float) $expense->amount,
@@ -701,7 +702,7 @@ class AdminMasterDataController extends Controller
             return $resolved;
         }
 
-        $actorBranchId = $request->user()?->branch_id ? (int) $request->user()->branch_id : null;
+        $actorBranchId = ActiveBranchContext::resolveBranchId($request->user());
         if ($resolved !== null && $actorBranchId !== null && $resolved !== $actorBranchId) {
             abort(422, 'Anda hanya bisa menetapkan cabang Anda sendiri.');
         }

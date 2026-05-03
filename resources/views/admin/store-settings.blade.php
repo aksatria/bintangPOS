@@ -371,6 +371,22 @@
                         <span class="ss-label">Preset Alasan Reject (1 baris 1 alasan)</span>
                         <textarea name="approval_reject_reason_presets" rows="4" class="ss-textarea">{{ old('approval_reject_reason_presets', implode("\n", (array) data_get($approvalRules, 'reject_reason_presets', []))) }}</textarea>
                     </label>
+                    <label class="ss-field">
+                        <span class="ss-label">KPI Mutasi: Overdue Warning (jumlah)</span>
+                        <input type="number" min="1" max="1000" name="stock_transfer_kpi_overdue_warning_count" class="ss-input" value="{{ old('stock_transfer_kpi_overdue_warning_count', (int) data_get($approvalRules, 'stock_transfer_kpi.overdue_warning_count', 3)) }}">
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">KPI Mutasi: SLA Approve (menit)</span>
+                        <input type="number" min="5" max="10080" name="stock_transfer_kpi_approve_sla_minutes" class="ss-input" value="{{ old('stock_transfer_kpi_approve_sla_minutes', (int) data_get($approvalRules, 'stock_transfer_kpi.approve_sla_minutes', 60)) }}">
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">KPI Mutasi: SLA Receive (menit)</span>
+                        <input type="number" min="5" max="10080" name="stock_transfer_kpi_receive_sla_minutes" class="ss-input" value="{{ old('stock_transfer_kpi_receive_sla_minutes', (int) data_get($approvalRules, 'stock_transfer_kpi.receive_sla_minutes', 180)) }}">
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">KPI Mutasi: Discrepancy Warning (%)</span>
+                        <input type="number" step="0.1" min="0" max="100" name="stock_transfer_kpi_discrepancy_warning_pct" class="ss-input" value="{{ old('stock_transfer_kpi_discrepancy_warning_pct', (float) data_get($approvalRules, 'stock_transfer_kpi.discrepancy_warning_pct', 5)) }}">
+                    </label>
                 </div>
             </section>
 

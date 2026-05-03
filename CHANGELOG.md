@@ -206,6 +206,76 @@ Format tanggal: `YYYY-MM-DD`.
   - deduplikasi approval `quick_refund/quick_void` kini ikut `branch_id` transaksi,
   - manager approval untuk partial refund dibatasi per cabang (admin non-owner tidak bisa approve lintas cabang; owner tetap bisa).
 - Command reminder Telegram (`pending-overdue` dan `followup-reminders`) kini juga memproses bucket `Global` (`branch_id` null) untuk kompatibilitas data legacy.
+- Owner/admin kini punya dropdown **Cabang Aktif** di sidebar; branch scope dan route model access mengikuti cabang aktif dari session.
+- Flow create utama (customer, expense, produk, approval refund/void, stock opname, reconcile shift, report export approval) kini mengambil `branch_id` dari **Cabang Aktif**.
+- Modul baru **Mutasi Stok Antar Cabang**:
+  - request mutasi dari cabang aktif (`requested`),
+  - approve/reject oleh cabang tujuan (`approved`/`rejected`),
+  - receive untuk eksekusi perpindahan stok (`received`) dengan lock transaksi DB,
+  - cancel request sebelum diproses (`cancelled`),
+  - seluruh aksi tercatat di audit log (`stock_transfer_*`),
+  - export bukti mutasi `CSV/PDF`,
+  - detail item mutasi dapat diexpand di daftar mutasi,
+  - pencarian produk live pada form request mutasi,
+  - field operasional pengiriman: `delivery_ref` dan `courier_name`,
+  - template slip mutasi PDF siap cetak dengan area tanda tangan pengirim/penerima.
+- Command generator demo mutasi (`demo:seed-stock-transfers`) ditambah opsi `--reset` untuk membersihkan data demo lama berdasarkan rute cabang sebelum generate baru.
+- Fitur **Permission Simulation (read-only)** dihapus dari UI/routing/middleware.
+- Halaman detail mutasi ditambah **timeline proses** (requested, approved/rejected, received/cancelled) lengkap timestamp dan aktor.
+- Halaman list mutasi ditambah filter operasional:
+  - `status`,
+  - rentang tanggal (`date_from` / `date_to`),
+  - `cabang asal`,
+  - `cabang tujuan`,
+  untuk mempercepat pencarian dokumen mutasi.
+- Halaman list mutasi ditambah preset cepat filter:
+  - `Hari Ini`,
+  - `7 Hari`,
+  - `Bulan Ini`,
+  - `Pending Saja`.
+- Preset cepat list mutasi kini menampilkan badge jumlah dokumen per kategori secara real-time query.
+- Mutasi stok ditingkatkan:
+  - **receive parsial** per item (`received_qty`) dengan validasi alasan selisih wajib jika qty berbeda,
+  - lampiran bukti pengiriman (`dispatch_proof`) dan bukti terima (`receive_proof`),
+  - catatan penerimaan (`receive_note`) pada transfer,
+  - export CSV/PDF menampilkan data selisih (`discrepancy_reason`) saat ada mismatch.
+  - cancel transfer berstatus `approved` kini otomatis melepas `reserved_qty` kembali ke stok cabang asal.
+- Tampilan operasional mutasi:
+  - badge overdue diperjelas di list + detail mutasi, termasuk umur dokumen (jam) untuk status `requested/approved`.
+- Monitoring operasional ditingkatkan:
+  - heartbeat scheduler baru (`ops:scheduler-heartbeat`) dijalankan tiap menit untuk deteksi `schedule:run` macet.
+  - halaman `System Health` menampilkan metrik umur heartbeat scheduler + ringkasan backup dan DR drill terakhir.
+- Dokumentasi operasional multi-cabang ditambah:
+  - `docs/UAT_MULTI_BRANCH_FINAL.md`
+  - `docs/SCHEDULER_MONITORING_RUNBOOK.md`
+  - `docs/MULTI_BRANCH_BACKUP_RESTORE_DRILL.md`
+- Dashboard manager ditambah tabel KPI mutasi per cabang (30 hari):
+  - aging overdue mutasi,
+  - SLA approve rata-rata,
+  - SLA receive rata-rata,
+  - discrepancy rate.
+- Branch scope query dengan `branch_id` kini kompatibel data legacy (`branch_id` null) sambil tetap mengikuti cabang aktif.
+- Go-live production helper:
+  - command baru `ops:production-sanity-check` untuk cek cepat health produksi (heartbeat scheduler, queue, overdue approval, backup, drill),
+  - panduan deploy ditambahkan di `docs/PRODUCTION_GO_LIVE_MULTI_BRANCH.md`.
+  - command `ops:production-sanity-check` kini mendukung opsi `--telegram` dengan dedup alert 15 menit.
+- Audit trail cabang aktif:
+  - setiap perpindahan `Cabang Aktif` kini tercatat di audit log (`active_branch_switched`) lengkap asal/tujuan cabang.
+- KPI mutasi per cabang ditingkatkan:
+  - threshold warning kini configurable di Pengaturan Toko (`approval_rules.stock_transfer_kpi`),
+  - dashboard mewarnai metrik SLA/overdue/discrepancy otomatis berdasarkan threshold.
+- Workflow mutasi kini kirim notifikasi Telegram (jika Telegram enabled) untuk event:
+  - requested,
+  - approved,
+  - rejected,
+  - received,
+  - cancelled.
+- Permission mutasi dipisah granular:
+  - `stock-transfer.view`,
+  - `stock-transfer.request`,
+  - `stock-transfer.approve`,
+  - `stock-transfer.receive`,
+  - `stock-transfer.export`.
 - Policy auto-assign escalation dipertegas:
   - L2: prioritaskan admin (fallback owner),
   - L3: owner-only.

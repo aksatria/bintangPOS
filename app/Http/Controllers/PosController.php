@@ -14,6 +14,7 @@ use App\Models\CashReconciliation;
 use App\Models\User;
 use App\Enums\SaleStatus;
 use App\Services\SaleService;
+use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -313,7 +314,7 @@ class PosController extends Controller
                 'shift_date' => $shiftDate,
             ],
             [
-                'branch_id' => $request->user()->branch_id,
+                'branch_id' => ActiveBranchContext::resolveBranchId($request->user()),
                 'expected_cash' => $expectedCash,
                 'actual_cash' => $actualCash,
                 'difference' => $difference,
@@ -414,7 +415,7 @@ class PosController extends Controller
             'hold_code' => $holdCode,
         ]);
 
-        $hold->branch_id = $user->branch_id;
+        $hold->branch_id = ActiveBranchContext::resolveBranchId($user);
         $hold->label = (string) $payload['label'];
         $hold->payload = $payload;
         $hold->total_qty = (int) collect($payload['cart'] ?? [])->sum(fn ($row) => (float) ($row['quantity'] ?? 0));
@@ -492,7 +493,7 @@ class PosController extends Controller
     {
         PosHold::query()
             ->where('user_id', $userId)
-            ->where('branch_id', auth()->user()?->branch_id)
+            ->where('branch_id', ActiveBranchContext::resolveBranchId(auth()->user()))
             ->where('updated_at', '<', now()->subHours(24))
             ->delete();
     }
