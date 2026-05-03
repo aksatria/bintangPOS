@@ -389,7 +389,7 @@ Proyek ini dilisensikan di bawah [MIT License](LICENSE) - lihat file [LICENSE](L
 
 ## 👨‍💻 Author
 
-**Aksa Tria** - [@aksatria](https://github.com/aksatria)
+**Aksatria** - [@aksatria](https://github.com/aksatria)
 
 ---
 
@@ -399,17 +399,6 @@ Proyek ini dilisensikan di bawah [MIT License](LICENSE) - lihat file [LICENSE](L
 - Filament team untuk admin panel yang powerful
 - Tailwind CSS untuk utility-first CSS framework
 - Semua kontributor yang telah membantu
-
----
-
-## 📞 Support
-
-Butuh bantuan? Ada beberapa cara untuk menghubungi:
-
-- 💬 Buka [GitHub Discussions](https://github.com/aksatria/bintangPOS/discussions)
-- 🐛 Report bug di [GitHub Issues](https://github.com/aksatria/bintangPOS/issues)
-- 📧 Email: support@bintang-pos.com
-- 📱 WhatsApp: [Chat Kami](https://wa.me/62xxx)
 
 ---
 
