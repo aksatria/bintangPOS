@@ -11,6 +11,8 @@ use App\Models\Customer;
 use App\Models\CustomerFollowUp;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\CustomerDebt;
+use App\Models\CustomerDebtPayment;
 use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use Illuminate\Support\Carbon;
@@ -172,6 +174,10 @@ class CustomerController extends Controller
         $status = (string) $request->query('status', 'all');
         $from = (string) $request->query('from', '');
         $to = (string) $request->query('to', '');
+        $debtStatus = (string) $request->query('debt_status', 'all');
+        $debtAging = (string) $request->query('debt_aging', 'all');
+        $debtFromDate = (string) $request->query('debt_from_date', now()->startOfMonth()->toDateString());
+        $debtToDate = (string) $request->query('debt_to_date', now()->toDateString());
 
         $sales = $customer->sales()
             ->with('user:id,name')
@@ -214,11 +220,96 @@ class CustomerController extends Controller
             ->get();
 
         $timeline = $this->buildCustomerTimeline($customer);
+        $debtBaseQuery = $this->applyBranchScope(CustomerDebt::query(), $request->user())
+            ->where('customer_id', $customer->id)
+            ->whereDate('debt_date', '>=', $debtFromDate)
+            ->whereDate('debt_date', '<=', $debtToDate);
 
-        return view('customers.show', compact('customer', 'sales', 'summary', 'status', 'from', 'to', 'topProducts', 'pendingSales', 'timeline'));
+        if ($debtStatus !== 'all') {
+            $debtBaseQuery->where('status', $debtStatus);
+        }
+
+        if ($debtAging !== 'all') {
+            $today = now()->startOfDay()->toDateString();
+            $debtBaseQuery->where('remaining_amount', '>', 0)->whereNotNull('due_date');
+            if ($debtAging === 'current') {
+                $debtBaseQuery->whereDate('due_date', '>=', $today);
+            } elseif ($debtAging === 'overdue_1_7') {
+                $debtBaseQuery->whereRaw('DATEDIFF(?, due_date) BETWEEN 1 AND 7', [$today]);
+            } elseif ($debtAging === 'overdue_8_30') {
+                $debtBaseQuery->whereRaw('DATEDIFF(?, due_date) BETWEEN 8 AND 30', [$today]);
+            } elseif ($debtAging === 'overdue_30_plus') {
+                $debtBaseQuery->whereRaw('DATEDIFF(?, due_date) > 30', [$today]);
+            }
+        }
+
+        $debtSummary = [
+            'active_overdue_count' => (int) (clone $debtBaseQuery)->whereIn('status', ['active', 'overdue'])->count(),
+            'remaining_total' => (float) (clone $debtBaseQuery)->whereIn('status', ['active', 'overdue'])->sum('remaining_amount'),
+            'paid_total' => (float) CustomerDebtPayment::query()
+                ->join('customer_debts', 'customer_debts.id', '=', 'customer_debt_payments.customer_debt_id')
+                ->where('customer_debts.customer_id', $customer->id)
+                ->whereDate('customer_debts.debt_date', '>=', $debtFromDate)
+                ->whereDate('customer_debts.debt_date', '<=', $debtToDate)
+                ->when($debtStatus !== 'all', fn ($q) => $q->where('customer_debts.status', $debtStatus))
+                ->when(! ($request->user()?->hasAnyRole(['owner']) ?? false), function ($q) use ($request) {
+                    $branchId = (int) ($request->user()?->branch_id ?? 0);
+                    if ($branchId > 0) {
+                        $q->where('customer_debts.branch_id', $branchId);
+                    }
+                })
+                ->sum('customer_debt_payments.amount'),
+        ];
+
+        $customerDebts = (clone $debtBaseQuery)
+            ->with(['sale:id,invoice_number'])
+            ->latest('debt_date')
+            ->paginate(15, ['*'], 'debt_page')
+            ->withQueryString();
+
+        $debtPaymentHistory = CustomerDebtPayment::query()
+            ->join('customer_debts', 'customer_debts.id', '=', 'customer_debt_payments.customer_debt_id')
+            ->where('customer_debts.customer_id', $customer->id)
+            ->whereDate('customer_debts.debt_date', '>=', $debtFromDate)
+            ->whereDate('customer_debts.debt_date', '<=', $debtToDate)
+            ->when($debtStatus !== 'all', fn ($q) => $q->where('customer_debts.status', $debtStatus))
+            ->when(! ($request->user()?->hasAnyRole(['owner']) ?? false), function ($q) use ($request) {
+                $branchId = (int) ($request->user()?->branch_id ?? 0);
+                if ($branchId > 0) {
+                    $q->where('customer_debts.branch_id', $branchId);
+                }
+            })
+            ->orderByDesc('customer_debt_payments.paid_at')
+            ->paginate(15, [
+                'customer_debt_payments.customer_debt_id',
+                'customer_debt_payments.amount',
+                'customer_debt_payments.payment_method',
+                'customer_debt_payments.paid_at',
+                'customer_debt_payments.note',
+            ], 'payment_page')
+            ->withQueryString();
+
+        return view('customers.show', compact(
+            'customer',
+            'sales',
+            'summary',
+            'status',
+            'from',
+            'to',
+            'topProducts',
+            'pendingSales',
+            'timeline',
+            'customerDebts',
+            'debtPaymentHistory',
+            'debtStatus',
+            'debtAging',
+            'debtFromDate',
+            'debtToDate',
+            'debtSummary'
+        ));
     }
 
-    public function exportPurchaseHistory(Customer $customer)
+    public function exportPurchaseHistory(Request $request, Customer $customer)
     {
         $filename = 'customer-history-'.$customer->id.'-'.now()->format('Ymd-His').'.xlsx';
 
@@ -698,7 +789,7 @@ class CustomerController extends Controller
                     'name' => $customer->name,
                     'phone' => $customer->phone,
                     'last_purchase_text' => $last ? $last->format('d M Y') : 'Belum pernah belanja',
-                    'inactive_days' => $last ? now()->diffInDays($last) : null,
+                    'inactive_days' => $last ? (int) round(now()->diffInDays($last)) : null,
                     'total_spending' => (float) ($customer->paid_sales_sum_total_amount ?? 0),
                 ];
             });
@@ -718,7 +809,7 @@ class CustomerController extends Controller
         ];
 
         foreach ($pendingSales as $sale) {
-            $age = Carbon::parse($sale->sold_at)->diffInDays(now());
+            $age = (int) round(Carbon::parse($sale->sold_at)->diffInDays(now()));
             if ($age <= 3) {
                 $bucket['0_3']++;
             } elseif ($age <= 7) {
@@ -750,7 +841,7 @@ class CustomerController extends Controller
         if (! $lastPurchase) {
             $score += 25;
         } else {
-            $inactiveDays = now()->diffInDays($lastPurchase);
+            $inactiveDays = (int) round(now()->diffInDays($lastPurchase));
             if ($inactiveDays >= 60) {
                 $score += 30;
             } elseif ($inactiveDays >= 30) {

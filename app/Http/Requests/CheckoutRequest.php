@@ -52,6 +52,7 @@ class CheckoutRequest extends FormRequest
         $this->merge([
             'items' => $items,
             'payment_method' => $paymentMethod,
+            'payment_method_single' => $singleMethod,
             'split_payments' => $splitPayments,
         ]);
     }
@@ -67,7 +68,7 @@ class CheckoutRequest extends FormRequest
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'tax_amount' => ['nullable', 'numeric', 'min:0'],
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
-            'payment_method' => ['nullable', Rule::in(['cash', 'qris', 'debit', 'transfer', 'e_wallet', 'mixed'])],
+            'payment_method' => ['nullable', Rule::in(['cash', 'qris', 'debit', 'transfer', 'e_wallet', 'mixed', 'installment'])],
             'payment_method_single' => ['nullable', Rule::in(['cash', 'qris', 'debit', 'transfer', 'e_wallet'])],
             'split_payments' => ['nullable', 'array', 'min:2'],
             'split_payments.*.method' => ['required_with:split_payments', 'distinct', Rule::in(['cash', 'qris', 'debit', 'transfer', 'e_wallet'])],
@@ -81,6 +82,12 @@ class CheckoutRequest extends FormRequest
             'manager_approval_password' => ['nullable', 'string', 'max:120'],
             'qris_reference_id' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9][A-Za-z0-9\-_.\/]{2,119}$/'],
             'qris_issuer' => ['nullable', 'string', 'max:120'],
+            'installment_enabled' => ['nullable', 'boolean'],
+            'installment_tenor_months' => ['nullable', 'integer', 'min:1', 'max:36'],
+            'installment_down_payment' => ['nullable', 'numeric', 'min:0'],
+            'installment_first_due_date' => ['nullable', 'date'],
+            'debt_mode' => ['nullable', Rule::in(['normal', 'merge', 'partial'])],
+            'debt_existing_id' => ['nullable', 'integer', 'exists:customer_debts,id'],
             'note' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],

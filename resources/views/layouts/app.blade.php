@@ -138,6 +138,23 @@
     <script src="{{ asset('dist/js/app.js') }}"></script>
     <script>
         (function () {
+            window.AppUI = window.AppUI || {};
+            window.AppUI.toast = function (message, type = 'success') {
+                let wrap = document.getElementById('app-toast-wrap');
+                if (!wrap) {
+                    wrap = document.createElement('div');
+                    wrap.id = 'app-toast-wrap';
+                    wrap.className = 'app-toast-wrap';
+                    wrap.setAttribute('aria-live', 'polite');
+                    document.body.appendChild(wrap);
+                }
+                const el = document.createElement('div');
+                el.className = 'app-toast' + (type === 'error' ? ' app-toast--error' : '');
+                el.textContent = message;
+                wrap.appendChild(el);
+                setTimeout(() => el.remove(), 2400);
+            };
+
             function renderIcons() {
                 if (window.feather && typeof window.feather.replace === 'function') {
                     window.feather.replace();

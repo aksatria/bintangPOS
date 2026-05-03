@@ -264,6 +264,8 @@ Format tanggal: `YYYY-MM-DD`.
 - KPI mutasi per cabang ditingkatkan:
   - threshold warning kini configurable di Pengaturan Toko (`approval_rules.stock_transfer_kpi`),
   - dashboard mewarnai metrik SLA/overdue/discrepancy otomatis berdasarkan threshold.
+- Dokumen matriks readiness fitur ditambahkan:
+  - `docs/FEATURE_READINESS_MATRIX.md` (status `Sudah/Partial/Belum` + prioritas lanjutan).
 - Workflow mutasi kini kirim notifikasi Telegram (jika Telegram enabled) untuk event:
   - requested,
   - approved,
@@ -299,3 +301,36 @@ Format tanggal: `YYYY-MM-DD`.
 ### Docs
 - Checklist rilis multi-cabang ditambahkan di:
   - `docs/release-multi-branch-checklist.md`
+## 2026-05-03
+
+### Added
+- Modul **Supplier & Pembelian** (multi-cabang):
+  - Master supplier per cabang (`/admin/suppliers`)
+  - Pembuatan draft pembelian supplier (PO internal)
+  - Proses receive pembelian untuk otomatis menambah stok produk dan update harga beli terakhir
+- Permission baru: `suppliers.manage`
+- Audit log baru:
+  - `supplier_purchase_created`
+  - `supplier_purchase_received`
+
+### Updated
+- Sidebar Master Data menampilkan menu **Supplier & Pembelian** untuk role yang punya izin.
+- Feature readiness matrix: status **Manajemen Supplier** berubah menjadi **Sudah**.
+
+### Added
+- Modul **Manajemen Hutang Pelanggan**:
+  - Menu `Hutang Pelanggan` untuk owner/admin berizin
+  - Pencatatan hutang baru per pelanggan (opsional link ke transaksi pending)
+  - Pembayaran cicilan bertahap, update otomatis `paid_amount` dan `remaining_amount`
+  - Status hutang: `active`, `overdue`, `paid`
+- Permission baru: `customers.debt.manage`
+- Audit log baru:
+  - `customer_debt_created`
+  - `customer_debt_paid`
+
+### Added
+- **POS Premium Cicilan**:
+  - Toggle transaksi cicilan langsung dari halaman kasir.
+  - Input tenor, DP awal, dan jatuh tempo pertama saat checkout.
+  - Otomatis generate data hutang pelanggan + pembayaran DP awal dari transaksi POS.
+- Readiness matrix: status **Fitur POS Premium** naik menjadi **Sudah**.

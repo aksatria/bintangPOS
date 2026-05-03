@@ -10,6 +10,7 @@ use App\Models\PosHold;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StoreSetting;
+use App\Models\CustomerDebt;
 use App\Models\CashReconciliation;
 use App\Models\User;
 use App\Enums\SaleStatus;
@@ -58,6 +59,12 @@ class PosController extends Controller
             ->orderBy('name')
             ->limit(100)
             ->get(['id', 'name', 'phone', 'email', 'address']);
+        $debtSummaryByCustomer = $this->applyBranchScope(CustomerDebt::query(), $request->user())
+            ->whereIn('status', ['active', 'overdue'])
+            ->selectRaw('customer_id, COUNT(*) as debt_count, COALESCE(SUM(remaining_amount),0) as debt_total, SUM(CASE WHEN status = "overdue" THEN 1 ELSE 0 END) as overdue_count, MIN(due_date) as nearest_due_date')
+            ->groupBy('customer_id')
+            ->get()
+            ->keyBy('customer_id');
 
         $today = now()->toDateString();
         $shiftSales = $this->applyBranchScope(Sale::query(), $request->user())
@@ -120,6 +127,9 @@ class PosController extends Controller
             'pendingTimeoutMinutes' => (int) ($store?->pending_non_cash_timeout_minutes ?? 30),
             'managerApprovalDiscountPct' => (float) env('POS_MANAGER_APPROVAL_DISCOUNT_PERCENT', 30),
             'pendingFollowups' => $pendingFollowups,
+            'customerDebtMap' => $debtSummaryByCustomer,
+            'customerDebtLimit' => (float) env('POS_CUSTOMER_DEBT_LIMIT', 20000000),
+            'canCustomerDebtManage' => $request->user()?->hasPermission('customers.debt.manage') ?? false,
         ]);
     }
 

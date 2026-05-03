@@ -203,7 +203,34 @@
                         <div class="db-metric-name db-tooltip" data-tooltip="Jumlah transaksi dengan status paid pada periode aktif.">Transaksi Paid</div>
                         <div class="db-metric-value">{{ number_format($transactionsRange, 0, ',', '.') }}</div>
                     </div>
+                </div>
+
+                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                    <h4 class="text-sm font-semibold text-amber-900">Accrual vs Cash (Piutang/Cicilan)</h4>
+                    <p class="mt-1 text-xs text-amber-800">Membedakan nilai penjualan kredit, kas cicilan masuk, dan outstanding agar analisa tidak bias.</p>
+                    <div class="mt-2">
+                        <a href="{{ route('customers.debts.index', ['from_date' => $startDate, 'to_date' => $endDate]) }}" class="text-xs font-semibold text-amber-900 underline">Buka Piutang dengan periode sama</a>
                     </div>
+                    <div class="mt-3 db-metric-grid db-profit-grid">
+                        <div class="db-metric-item db-profit-item">
+                            <div class="db-metric-name">Penjualan Kredit</div>
+                            <div class="db-metric-value">{{ $idrFull((float) ($creditSalesRange ?? 0)) }}</div>
+                        </div>
+                        <div class="db-metric-item db-profit-item">
+                            <div class="db-metric-name">Kas Masuk Cicilan</div>
+                            <div class="db-metric-value">{{ $idrFull((float) ($installmentCashInRange ?? 0)) }}</div>
+                        </div>
+                        <div class="db-metric-item db-profit-item">
+                            <div class="db-metric-name">Outstanding Piutang</div>
+                            <div class="db-metric-value">{{ $idrFull((float) ($outstandingDebtTotal ?? 0)) }}</div>
+                        </div>
+                        <div class="db-metric-item db-profit-item">
+                            <div class="db-metric-name">Omzet Accrual</div>
+                            <div class="db-metric-value">{{ $idrFull((float) ($accrualRevenueRange ?? 0)) }}</div>
+                            <div class="db-kpi-note">Omzet Paid + Penjualan Kredit</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -486,6 +513,82 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="text-slate-500">Belum ada data mutasi pada 30 hari terakhir.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        @if($isManager)
+        <div class="db-panel mt-6 intro-y">
+            <div class="db-panel-head">
+                <div>
+                    <h3 class="db-panel-title">KPI Piutang Per Cabang</h3>
+                    <p class="db-panel-subtitle">Outstanding aktif, overdue, total sisa, dan overdue rate.</p>
+                </div>
+            </div>
+            <div class="db-panel-body overflow-x-auto">
+                <table class="table-ui w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Cabang</th>
+                            <th class="text-left">Piutang Aktif</th>
+                            <th class="text-left">Overdue</th>
+                            <th class="text-left">Total Sisa</th>
+                            <th class="text-left">Overdue Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse(($branchDebtKpis ?? collect()) as $kpi)
+                            <tr>
+                                <td class="font-semibold">{{ $kpi['branch_name'] }}</td>
+                                <td>{{ number_format((int) $kpi['active_count'], 0, ',', '.') }}</td>
+                                <td class="{{ (int) $kpi['overdue_count'] > 0 ? 'text-rose-700 font-semibold' : '' }}">{{ number_format((int) $kpi['overdue_count'], 0, ',', '.') }}</td>
+                                <td>{{ $idrFull((float) $kpi['total_remaining']) }}</td>
+                                <td class="{{ (float) $kpi['overdue_rate'] >= 20 ? 'text-rose-700 font-semibold' : '' }}">{{ number_format((float) $kpi['overdue_rate'], 2, ',', '.') }}%</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-slate-500">Belum ada data piutang aktif.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="db-panel mt-6 intro-y">
+            <div class="db-panel-head">
+                <div>
+                    <h3 class="db-panel-title">KPI Hutang Supplier Per Cabang</h3>
+                    <p class="db-panel-subtitle">Open hutang, overdue, total outstanding, dan overdue rate.</p>
+                </div>
+            </div>
+            <div class="db-panel-body overflow-x-auto">
+                <table class="table-ui w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Cabang</th>
+                            <th class="text-left">Open Hutang</th>
+                            <th class="text-left">Overdue</th>
+                            <th class="text-left">Outstanding</th>
+                            <th class="text-left">Overdue Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse(($branchSupplierDebtKpis ?? collect()) as $kpi)
+                            <tr>
+                                <td class="font-semibold">{{ $kpi['branch_name'] }}</td>
+                                <td>{{ number_format((int) $kpi['open_count'], 0, ',', '.') }}</td>
+                                <td class="{{ (int) $kpi['overdue_count'] > 0 ? 'text-rose-700 font-semibold' : '' }}">{{ number_format((int) $kpi['overdue_count'], 0, ',', '.') }}</td>
+                                <td>{{ $idrFull((float) $kpi['total_outstanding']) }}</td>
+                                <td class="{{ (float) $kpi['overdue_rate'] >= 20 ? 'text-rose-700 font-semibold' : '' }}">{{ number_format((float) $kpi['overdue_rate'], 2, ',', '.') }}%</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-slate-500">Belum ada data hutang supplier terbuka.</td>
                             </tr>
                         @endforelse
                     </tbody>

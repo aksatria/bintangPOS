@@ -138,99 +138,101 @@
                 </div>
             </div>
 
-            <div class="ad-card">
-                <div class="ad-headbar"><h3 class="ad-card-title">Tambah Pengguna</h3></div>
-                <div class="ad-body">
-                    <form method="POST" action="{{ route('admin.users.store') }}" enctype="multipart/form-data" class="ad-form-shell" id="create-user-form">
-                        @csrf
-                        <div class="ad-form-group">
-                            <h4 class="ad-form-group-title">Identitas Akun</h4>
-                            <label>
-                                <span class="ad-field-label">Nama Lengkap</span>
-                                <input type="text" name="name" class="ad-input" required>
-                            </label>
-                            <label>
-                                <span class="ad-field-label">Email</span>
-                                <input type="email" name="email" class="ad-input" required>
-                            </label>
-                            <label>
-                                <span class="ad-field-label">Role</span>
-                                <select name="role" class="ad-select" required>
-                                    <option value="owner">Owner</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="kasir">Kasir</option>
-                                </select>
-                            </label>
-                            <label>
-                                <span class="ad-field-label">Cabang</span>
-                                <select name="branch_id" class="ad-select">
-                                    <option value="">Tanpa Cabang</option>
-                                    @foreach(($branches ?? collect()) as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->name }} ({{ $branch->code }})</option>
-                                    @endforeach
-                                </select>
-                            </label>
-                        </div>
-                        <div class="ad-form-group">
-                            <h4 class="ad-form-group-title">Keamanan</h4>
-                            <label>
-                                <span class="ad-field-label">Password</span>
-                                <input type="password" name="password" class="ad-input" minlength="6" required>
-                            </label>
-                        </div>
-                        <div class="ad-form-group">
-                            <h4 class="ad-form-group-title">Foto Profil</h4>
-                            <label>
-                                <span class="ad-field-label">Upload (Opsional)</span>
-                                <div class="ad-file">
-                                    <input type="file" name="photo" id="create-user-photo-input" accept="image/*">
-                                    <div class="ad-file-preview" id="create-user-photo-preview">
-                                        <span class="ad-file-preview-empty">Belum ada foto dipilih</span>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                        <button class="ad-btn w-full" type="submit">Simpan Pengguna</button>
-                    </form>
-                </div>
-            </div>
-
-            @if(auth()->user()?->hasAnyRole(['owner']))
-            <div class="ad-card">
-                <div class="ad-headbar"><h3 class="ad-card-title">Manajemen Cabang</h3></div>
-                <div class="ad-body space-y-3">
-                    <form id="create-branch-form" class="ad-form-shell">
-                        @csrf
-                        <div class="ad-form-group">
-                            <h4 class="ad-form-group-title">Tambah Cabang</h4>
-                            <label><span class="ad-field-label">Nama Cabang</span><input name="name" class="ad-input" required></label>
-                            <label>
-                                <span class="ad-field-label">Kode Cabang</span>
-                                <input name="code" class="ad-input" required pattern="[A-Za-z0-9_-]+" title="Gunakan huruf, angka, tanda minus (-), atau underscore (_)." placeholder="Contoh: CABANG_01">
-                                <span class="text-xs text-slate-500">Hanya huruf, angka, `-`, dan `_`.</span>
-                            </label>
-                            <label><span class="ad-field-label">Alamat (Opsional)</span><input name="address" class="ad-input"></label>
-                            <label class="inline-flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" name="is_active" value="1" checked> Aktif</label>
-                        </div>
-                        <button class="ad-btn w-full" type="submit">Simpan Cabang</button>
-                    </form>
-
-                    <div class="space-y-2">
-                        @foreach(($branches ?? collect()) as $branch)
-                            <div class="ad-item !text-left">
-                                <p class="ad-name">{{ $branch->name }} <span class="ad-role-label">{{ $branch->code }}</span></p>
-                                <p class="ad-meta">{{ $branch->address ?: '-' }}</p>
-                                <p class="ad-meta">Status: {{ $branch->is_active ? 'Aktif' : 'Nonaktif' }}</p>
-                                <div class="ad-actions !justify-start">
-                                    <button type="button" class="ad-btn-soft" onclick="openBranchModal({{ $branch->id }}, @js($branch->name), @js($branch->code), @js($branch->address), {{ $branch->is_active ? 'true' : 'false' }})">Edit</button>
-                                    <button type="button" class="ad-btn-soft ad-btn-danger" data-delete-branch="{{ $branch->id }}">Hapus</button>
-                                </div>
+            <div class="ad-side-stack">
+                <div class="ad-card">
+                    <div class="ad-headbar"><h3 class="ad-card-title">Tambah Pengguna</h3></div>
+                    <div class="ad-body">
+                        <form method="POST" action="{{ route('admin.users.store') }}" enctype="multipart/form-data" class="ad-form-shell" id="create-user-form">
+                            @csrf
+                            <div class="ad-form-group">
+                                <h4 class="ad-form-group-title">Identitas Akun</h4>
+                                <label>
+                                    <span class="ad-field-label">Nama Lengkap</span>
+                                    <input type="text" name="name" class="ad-input" required>
+                                </label>
+                                <label>
+                                    <span class="ad-field-label">Email</span>
+                                    <input type="email" name="email" class="ad-input" required>
+                                </label>
+                                <label>
+                                    <span class="ad-field-label">Role</span>
+                                    <select name="role" class="ad-select" required>
+                                        <option value="owner">Owner</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="kasir">Kasir</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span class="ad-field-label">Cabang</span>
+                                    <select name="branch_id" class="ad-select">
+                                        <option value="">Tanpa Cabang</option>
+                                        @foreach(($branches ?? collect()) as $branch)
+                                            <option value="{{ $branch->id }}">{{ $branch->name }} ({{ $branch->code }})</option>
+                                        @endforeach
+                                    </select>
+                                </label>
                             </div>
-                        @endforeach
+                            <div class="ad-form-group">
+                                <h4 class="ad-form-group-title">Keamanan</h4>
+                                <label>
+                                    <span class="ad-field-label">Password</span>
+                                    <input type="password" name="password" class="ad-input" minlength="6" required>
+                                </label>
+                            </div>
+                            <div class="ad-form-group">
+                                <h4 class="ad-form-group-title">Foto Profil</h4>
+                                <label>
+                                    <span class="ad-field-label">Upload (Opsional)</span>
+                                    <div class="ad-file">
+                                        <input type="file" name="photo" id="create-user-photo-input" accept="image/*">
+                                        <div class="ad-file-preview" id="create-user-photo-preview">
+                                            <span class="ad-file-preview-empty">Belum ada foto dipilih</span>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            <button class="ad-btn w-full" type="submit">Simpan Pengguna</button>
+                        </form>
                     </div>
                 </div>
+
+                @if(auth()->user()?->hasAnyRole(['owner']))
+                <div class="ad-card">
+                    <div class="ad-headbar"><h3 class="ad-card-title">Manajemen Cabang</h3></div>
+                    <div class="ad-body space-y-3">
+                        <form id="create-branch-form" class="ad-form-shell">
+                            @csrf
+                            <div class="ad-form-group">
+                                <h4 class="ad-form-group-title">Tambah Cabang</h4>
+                                <label><span class="ad-field-label">Nama Cabang</span><input name="name" class="ad-input" required></label>
+                                <label>
+                                    <span class="ad-field-label">Kode Cabang</span>
+                                    <input name="code" class="ad-input" required pattern="[A-Za-z0-9_-]+" title="Gunakan huruf, angka, tanda minus (-), atau underscore (_)." placeholder="Contoh: CABANG_01">
+                                    <span class="text-xs text-slate-500">Hanya huruf, angka, `-`, dan `_`.</span>
+                                </label>
+                                <label><span class="ad-field-label">Alamat (Opsional)</span><input name="address" class="ad-input"></label>
+                                <label class="inline-flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" name="is_active" value="1" checked> Aktif</label>
+                            </div>
+                            <button class="ad-btn w-full" type="submit">Simpan Cabang</button>
+                        </form>
+
+                        <div class="space-y-2">
+                            @foreach(($branches ?? collect()) as $branch)
+                                <div class="ad-item !text-left">
+                                    <p class="ad-name">{{ $branch->name }} <span class="ad-role-label">{{ $branch->code }}</span></p>
+                                    <p class="ad-meta">{{ $branch->address ?: '-' }}</p>
+                                    <p class="ad-meta">Status: {{ $branch->is_active ? 'Aktif' : 'Nonaktif' }}</p>
+                                    <div class="ad-actions !justify-start">
+                                        <button type="button" class="ad-btn-soft" onclick="openBranchModal({{ $branch->id }}, @js($branch->name), @js($branch->code), @js($branch->address), {{ $branch->is_active ? 'true' : 'false' }})">Edit</button>
+                                        <button type="button" class="ad-btn-soft ad-btn-danger" data-delete-branch="{{ $branch->id }}">Hapus</button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                @endif
             </div>
-            @endif
         </div>
     </div>
 

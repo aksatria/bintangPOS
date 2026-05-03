@@ -7,18 +7,21 @@
 @php($canTransferView = $user?->hasPermission('stock-transfer.view') ?? false)
 @php($canMasterData = $user?->hasPermission('master-data.manage') ?? false)
 @php($canUsersManage = $user?->hasPermission('users.manage') ?? false)
+@php($canSuppliersManage = $user?->hasPermission('suppliers.manage') ?? false)
 @php($canPermissionsManage = $user?->hasPermission('permissions.manage') ?? false)
 @php($canCustomersManage = $user?->hasPermission('customers.manage') ?? false)
 @php($canCustomersFollowup = $user?->hasPermission('customers.followup.manage') ?? false)
+@php($canCustomersDebt = $user?->hasPermission('customers.debt.manage') ?? false)
 @php($canAuditLogsView = $user?->hasPermission('audit-logs.view') ?? false)
 @php($canStoreSettings = $user?->hasPermission('settings.store.manage') ?? false)
 @php($canNotificationSettings = $user?->hasPermission('settings.notification.manage') ?? false)
 @php($canApprovalsManage = $user?->hasPermission('approvals.manage') ?? false)
-@php($hasAnyMasterDataMenu = $canMasterData || $canUsersManage || $canCustomersManage || $canCustomersFollowup)
+@php($hasAnyMasterDataMenu = $canMasterData || $canSuppliersManage || $canUsersManage || $canCustomersManage || $canCustomersFollowup || $canCustomersDebt)
 @php($hasAnyControlSystemMenu = $canAuditLogsView || $canStoreSettings || $canNotificationSettings || $canPermissionsManage || $canApprovalsManage)
-@php($isMasterDataActive = request()->is('admin/categories*') || request()->is('admin/products*') || request()->is('admin/expenses*') || request()->is('admin/users*') || request()->is('backoffice/expenses*') || request()->is('backoffice/users*') || request()->routeIs('customers.*'))
+@php($isMasterDataActive = request()->is('admin/categories*') || request()->is('admin/products*') || request()->is('admin/expenses*') || request()->is('admin/suppliers*') || request()->is('backoffice/expenses*') || request()->is('admin/users*') || request()->is('backoffice/users*') || request()->routeIs('customers.*'))
 @php($isCustomerFollowupsActive = request()->routeIs('customers.followups'))
-@php($isCustomersActive = request()->routeIs('customers.*') && ! $isCustomerFollowupsActive)
+@php($isCustomersDebtActive = request()->routeIs('customers.debts.*'))
+@php($isCustomersActive = request()->routeIs('customers.*') && ! $isCustomerFollowupsActive && ! $isCustomersDebtActive)
 @php($isPosActive = request()->routeIs('pos.*') || request()->routeIs('sales.*'))
 @php($isStockOpnameActive = request()->routeIs('stock-opnames.*'))
 @php($isStockTransferActive = request()->routeIs('stock-transfers.*'))
@@ -84,7 +87,7 @@
                 <li>
                     <a href="{{ route('stock-transfers.index') }}" class="{{ $isStockTransferActive ? 'side-menu side-menu--active' : 'side-menu' }}">
                         <div class="side-menu__icon"><i data-feather="repeat"></i></div>
-                        <div class="side-menu__title">Mutasi Antar Cabang</div>
+                        <div class="side-menu__title">Mutasi Stok</div>
                     </a>
                 </li>
                 @endif
@@ -131,6 +134,14 @@
                     </a>
                 </li>
                 @endif
+                @if($canSuppliersManage)
+                <li>
+                    <a href="{{ route('admin.suppliers.index') }}" class="{{ request()->is('admin/suppliers*') ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="truck"></i></div>
+                        <div class="side-menu__title">Vendor</div>
+                    </a>
+                </li>
+                @endif
                 @if($canUsersManage)
                 <li>
                     <a href="{{ url('/admin/users') }}" class="{{ request()->is('admin/users*') || request()->is('backoffice/users*') ? 'side-menu side-menu--active' : 'side-menu' }}">
@@ -152,6 +163,14 @@
                     <a href="{{ route('customers.followups') }}" class="{{ $isCustomerFollowupsActive ? 'side-menu side-menu--active' : 'side-menu' }}">
                         <div class="side-menu__icon"><i data-feather="clock"></i></div>
                         <div class="side-menu__title">Follow-up Hari Ini</div>
+                    </a>
+                </li>
+                @endif
+                @if($canCustomersDebt)
+                <li>
+                    <a href="{{ route('customers.debts.index') }}" class="{{ $isCustomersDebtActive ? 'side-menu side-menu--active' : 'side-menu' }}">
+                        <div class="side-menu__icon"><i data-feather="file-text"></i></div>
+                        <div class="side-menu__title">Piutang Pelanggan</div>
                     </a>
                 </li>
                 @endif

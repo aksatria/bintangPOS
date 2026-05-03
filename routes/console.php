@@ -419,3 +419,32 @@ Artisan::command('demo:seed-stock-transfers
         $this->line('- ' . strtoupper((string) $row->status) . ': ' . (int) $row->total);
     }
 })->purpose('Generate batch transfer demo antar cabang dengan parameter dinamis.');
+
+Artisan::command('debt:renumber-short {--dry-run : Tampilkan preview tanpa menyimpan}', function () {
+    $rows = \App\Models\CustomerDebt::query()->orderBy('id')->get(['id', 'number']);
+    if ($rows->isEmpty()) {
+        $this->warn('Tidak ada data customer_debts.');
+        return;
+    }
+
+    $i = 1;
+    $changed = 0;
+    foreach ($rows as $row) {
+        $newNumber = 'AR-' . str_pad((string) $i, 4, '0', STR_PAD_LEFT);
+        if ((string) $row->number !== $newNumber) {
+            $changed++;
+            $this->line("#{$row->id} {$row->number} -> {$newNumber}");
+            if (! $this->option('dry-run')) {
+                $row->number = $newNumber;
+                $row->save();
+            }
+        }
+        $i++;
+    }
+
+    if ($this->option('dry-run')) {
+        $this->info("Preview selesai. Kandidat perubahan: {$changed} baris.");
+    } else {
+        $this->info("Selesai. Nomor piutang diupdate: {$changed} baris.");
+    }
+})->purpose('Renumber semua nomor piutang jadi format pendek AR-0001, AR-0002, dst.');

@@ -548,6 +548,42 @@
             border-color: #dc2626;
             color: #fff;
         }
+        .sales-debt-box {
+            margin-top: .75rem;
+            border: 1px solid #dbe5f2;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+            padding: .72rem .82rem;
+        }
+        .sales-debt-box--amber {
+            border-color: #fde68a;
+            background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+        }
+        .sales-debt-box--blue {
+            border-color: #bfdbfe;
+            background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+        }
+        .sales-debt-title {
+            margin: 0;
+            font-size: .78rem;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #334155;
+        }
+        .sales-debt-meta {
+            margin-top: .35rem;
+            font-size: .8rem;
+            color: #334155;
+            line-height: 1.4;
+        }
+        .sales-debt-link {
+            margin-top: .35rem;
+            display: inline-block;
+            font-size: .76rem;
+            font-weight: 700;
+            text-decoration: underline;
+        }
         .is-invalid-refund {
             outline: 2px solid #fca5a5;
             border-color: #ef4444 !important;
@@ -571,11 +607,25 @@
             </div>
             <div class="sales-card-body">
                 @php
-                    $latestAttempt = is_array($sale->payment_attempt_logs ?? null) && count($sale->payment_attempt_logs) > 0
-                        ? end($sale->payment_attempt_logs)
-                        : null;
+                    $attemptLogs = is_array($sale->payment_attempt_logs ?? null) ? $sale->payment_attempt_logs : [];
+                    $latestAttempt = count($attemptLogs) > 0 ? end($attemptLogs) : null;
                     $qrisRef = null;
                     $qrisIssuer = null;
+                    $hasLinkedDebt = $sale->relationLoaded('customerDebts') && $sale->customerDebts->isNotEmpty();
+                    $linkedDebt = $hasLinkedDebt ? $sale->customerDebts->sortByDesc('id')->first() : null;
+                    $remainingDue = max((float) $sale->total_amount - (float) $sale->paid_amount, 0);
+                    $paymentMethod = (string) ($sale->payment_method ?? 'cash');
+                    $paymentMethodLabel = match ($paymentMethod) {
+                        'e_wallet' => 'E-WALLET',
+                        'mixed' => 'SPLIT',
+                        'installment' => 'CICILAN',
+                        default => strtoupper(str_replace('_', ' ', $paymentMethod)),
+                    };
+                    if ($sale->status->value === 'pending' && $paymentMethod !== 'installment' && $hasLinkedDebt) {
+                        $paymentMethodLabel = 'HUTANG (PENDING)';
+                    } elseif ($sale->status->value === 'pending' && $paymentMethod === 'installment') {
+                        $paymentMethodLabel = 'CICILAN (PENDING)';
+                    }
                     if (preg_match_all('/\[QRIS\]\s*Ref:\s*(.*?)\s*\|\s*Issuer:\s*(.*)/', (string) ($sale->note ?? ''), $qrisMatches, PREG_SET_ORDER) && count($qrisMatches) > 0) {
                         $lastQris = $qrisMatches[count($qrisMatches) - 1];
                         $qrisRef = trim((string) ($lastQris[1] ?? ''));
@@ -622,7 +672,7 @@
                     </div>
                     <div class="sales-meta">
                         <p class="sales-meta-label">Metode Bayar</p>
-                        <p class="sales-meta-value">{{ strtoupper(str_replace('_', ' ', (string) ($sale->payment_method ?? 'cash'))) }}</p>
+                        <p class="sales-meta-value">{{ $paymentMethodLabel }}</p>
                         @if($qrisRef || $qrisIssuer)
                             <div class="sales-qris-ref">
                                 <span>Ref QRIS: {{ $qrisRef ?: '-' }}</span>
@@ -652,11 +702,47 @@
                         <p class="sales-total-label">Dibayar</p>
                         <p class="sales-total-value sales-money">Rp {{ number_format($sale->paid_amount, 0, ',', '.') }}</p>
                     </div>
+                    @if($sale->status->value === 'pending')
+                        <div class="sales-total sales-total--sub">
+                            <p class="sales-total-label">Kurang Bayar</p>
+                            <p class="sales-total-value sales-money">Rp {{ number_format($remainingDue, 0, ',', '.') }}</p>
+                        </div>
+                    @endif
                     <div class="sales-total sales-total--change">
                         <p class="sales-total-label">Kembalian</p>
                         <p class="sales-total-value sales-money">Rp {{ number_format($sale->change_amount, 0, ',', '.') }}</p>
                     </div>
                 </div>
+                @if($linkedDebt)
+                    <div class="sales-debt-box sales-debt-box--amber">
+                        <p class="sales-debt-title">Info Piutang/Cicilan</p>
+                        <div class="sales-debt-meta">
+                            No: {{ $linkedDebt->number }} |
+                            Sisa: Rp {{ number_format((float) $linkedDebt->remaining_amount, 0, ',', '.') }} |
+                            JT: {{ $linkedDebt->due_date ? $linkedDebt->due_date->format('d/m/Y') : '-' }}
+                        </div>
+                        <a href="{{ route('customers.debts.index', ['q' => $linkedDebt->number]) }}" class="sales-debt-link text-amber-800">Lihat di halaman Piutang</a>
+                    </div>
+                @endif
+                @if(!empty($customerDebtSummary) && (int) ($customerDebtSummary->debt_count ?? 0) > 0)
+                    <div class="sales-debt-box sales-debt-box--blue">
+                        <p class="sales-debt-title">Ringkasan Piutang Pelanggan</p>
+                        <div class="sales-debt-meta">
+                            Aktif: {{ number_format((int) ($customerDebtSummary->debt_count ?? 0), 0, ',', '.') }} |
+                            Overdue: {{ number_format((int) ($customerDebtSummary->overdue_count ?? 0), 0, ',', '.') }} |
+                            Total Sisa: Rp {{ number_format((float) ($customerDebtSummary->total_remaining ?? 0), 0, ',', '.') }}
+                        </div>
+                        @if(!empty($customerDebtRecentPayments) && $customerDebtRecentPayments->count() > 0)
+                            <div class="mt-2 text-xs">
+                                <div class="font-semibold mb-1">Histori Cicilan Terbaru</div>
+                                @foreach($customerDebtRecentPayments as $pay)
+                                    <div>Rp {{ number_format((float) $pay->amount, 0, ',', '.') }} - {{ strtoupper(str_replace('_', ' ', (string) $pay->payment_method)) }} ({{ optional($pay->paid_at)->format('d/m/Y H:i') }})</div>
+                                @endforeach
+                            </div>
+                        @endif
+                        <a href="{{ route('customers.debts.index', ['q' => $sale->customer?->name]) }}" class="sales-debt-link text-blue-800">Lihat semua di halaman Piutang</a>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -956,6 +1042,15 @@
             if (shouldAutoPrint) {
                 window.open(@json(route('sales.receipt-print', $sale)), '_blank');
             }
+
+            // Bersihkan query trigger agar pop-up tidak terulang saat reload.
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('autoprint');
+                url.searchParams.delete('open_receipt_pdf');
+                url.searchParams.delete('clear_hold_id');
+                window.history.replaceState({}, document.title, url.toString());
+            } catch (e) {}
         });
     </script>
     @endif
@@ -1082,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const summary = [
                 `Invoice: {{ $sale->invoice_number }}`,
                 `Status: {{ strtoupper($sale->status->value) }}`,
-                `Metode: {{ strtoupper(str_replace('_', ' ', (string) ($sale->payment_method ?? 'cash'))) }}`,
+                `Metode: {{ $paymentMethodLabel }}`,
                 @if(!empty($qrisRef))
                 `Ref QRIS: {{ $qrisRef }}`,
                 @endif

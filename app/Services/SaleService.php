@@ -4,18 +4,26 @@ namespace App\Services;
 
 use App\Enums\SaleStatus;
 use App\Models\Customer;
+use App\Models\CustomerDebt;
+use App\Models\CustomerDebtPayment;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StoreSetting;
 use App\Models\User;
+use App\Services\CustomerDebtNumberService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 
 class SaleService
 {
+    public function __construct(
+        private readonly CustomerDebtNumberService $debtNumberService
+    ) {}
+
     private const PAYMENT_METHOD_LIMITS = [
         'cash' => 100000000.0,
         'qris' => 50000000.0,
@@ -90,6 +98,13 @@ class SaleService
             $discount = (float) ($payload['discount_amount'] ?? 0);
             $tax = (float) ($payload['tax_amount'] ?? 0);
             $baseTotal = max($subtotal - $discount + $tax, 0);
+            $installmentEnabled = (bool) ($payload['installment_enabled'] ?? false);
+            $installmentTenorMonths = max(1, (int) ($payload['installment_tenor_months'] ?? 1));
+            $installmentDownPayment = max((float) ($payload['installment_down_payment'] ?? 0), 0);
+            $installmentDownPayment = min($installmentDownPayment, $baseTotal);
+            $installmentFirstDueDate = ! empty($payload['installment_first_due_date'])
+                ? Carbon::parse((string) $payload['installment_first_due_date'])
+                : now()->addMonth();
             $this->validateManagerApprovalForLargeDiscount($user, $payload, $subtotal, $discount);
             $roundingAmount = 0.0;
             $adminFeeAmount = 0.0;
@@ -156,6 +171,12 @@ class SaleService
             }
 
             $total = $baseTotal;
+            if ($installmentEnabled) {
+                $requestedStatus = SaleStatus::Pending->value;
+                $paymentMethod = 'installment';
+                $paymentBreakdown = null;
+                $paidAmount = $installmentDownPayment;
+            }
 
             $overpayRules = is_array($store?->payment_overpay_rules) ? $store->payment_overpay_rules : [];
 
@@ -195,9 +216,11 @@ class SaleService
             }
             if ($status !== SaleStatus::Paid->value) {
                 $paymentBreakdown = null;
-                $paidAmount = 0;
+                if (! $installmentEnabled) {
+                    $paidAmount = 0;
+                }
                 if ($paymentMethod === 'mixed') {
-                    $paymentMethod = 'cash';
+                    $paymentMethod = $installmentEnabled ? 'installment' : 'cash';
                 }
             }
 
@@ -211,7 +234,12 @@ class SaleService
                 || ($paymentMethod === 'mixed' && is_array($paymentBreakdown)
                     && collect($paymentBreakdown)->contains(fn ($row) => (string) ($row['method'] ?? '') === 'qris'));
 
-            $customer = $this->resolveCustomer($payload);
+            $customer = $this->resolveCustomer($user, $payload);
+            if ($installmentEnabled && ! $customer) {
+                throw ValidationException::withMessages([
+                    'customer_name' => 'Transaksi cicilan wajib memilih atau mengisi pelanggan.',
+                ]);
+            }
             $customerName = trim((string) ($payload['customer_name'] ?? ''));
             $note = (string) ($payload['note'] ?? '');
 
@@ -287,8 +315,141 @@ class SaleService
                 $product->decrement('stock', $itemData['quantity']);
             }
 
+            if ($installmentEnabled && $customer) {
+                $debt = $this->createDebtWithUniqueNumber([
+                    'branch_id' => $user->branch_id,
+                    'customer_id' => $customer->id,
+                    'sale_id' => $sale->id,
+                    'created_by' => $user->id,
+                    'debt_date' => now()->toDateString(),
+                    'due_date' => $installmentFirstDueDate->copy()->addMonths(max($installmentTenorMonths - 1, 0))->toDateString(),
+                    'principal_amount' => $total,
+                    'paid_amount' => 0,
+                    'remaining_amount' => $total,
+                    'status' => 'active',
+                    'note' => trim(($note !== '' ? $note."\n" : '')."Cicilan {$installmentTenorMonths} bulan. Jatuh tempo pertama: ".$installmentFirstDueDate->format('d/m/Y')),
+                ]);
+
+                if ($installmentDownPayment > 0) {
+                    CustomerDebtPayment::query()->create([
+                        'customer_debt_id' => $debt->id,
+                        'received_by' => $user->id,
+                        'paid_at' => now(),
+                        'amount' => $installmentDownPayment,
+                        'payment_method' => 'cash',
+                        'note' => 'DP awal saat checkout cicilan.',
+                    ]);
+
+                    $remaining = max($total - $installmentDownPayment, 0);
+                    $debt->update([
+                        'paid_amount' => $installmentDownPayment,
+                        'remaining_amount' => $remaining,
+                        'status' => $remaining <= 0 ? 'paid' : 'active',
+                    ]);
+                }
+            }
+
+            if (! $installmentEnabled && $customer) {
+                $debtMode = (string) ($payload['debt_mode'] ?? 'normal');
+                if (in_array($debtMode, ['merge', 'partial'], true)) {
+                    $remainingForDebt = $debtMode === 'merge'
+                        ? (float) $total
+                        : max((float) $total - (float) $paidAmount, 0);
+
+                    if ($remainingForDebt > 0) {
+                        $currentOutstanding = (float) CustomerDebt::query()
+                            ->where('branch_id', $user->branch_id)
+                            ->where('customer_id', $customer->id)
+                            ->whereIn('status', ['active', 'overdue'])
+                            ->sum('remaining_amount');
+                        $limit = max(0, (float) env('POS_CUSTOMER_DEBT_LIMIT', 20000000));
+                        if (($currentOutstanding + $remainingForDebt) > $limit) {
+                            throw ValidationException::withMessages([
+                                'customer_id' => 'Total piutang pelanggan melebihi limit: Rp '.number_format($limit, 0, ',', '.'),
+                            ]);
+                        }
+
+                        $targetDebt = null;
+                        if ($debtMode === 'merge') {
+                            $targetDebt = CustomerDebt::query()
+                                ->where('branch_id', $user->branch_id)
+                                ->where('customer_id', $customer->id)
+                                ->whereIn('status', ['active', 'overdue'])
+                                ->orderBy('id')
+                                ->first();
+                        }
+
+                        $paymentMethodForDebt = in_array($paymentMethod, ['cash', 'qris', 'debit', 'transfer', 'e_wallet'], true) ? $paymentMethod : 'cash';
+                        if ($targetDebt) {
+                            $targetDebt->update([
+                                'principal_amount' => (float) $targetDebt->principal_amount + $remainingForDebt,
+                                'remaining_amount' => (float) $targetDebt->remaining_amount + $remainingForDebt,
+                                'status' => ($targetDebt->due_date && $targetDebt->due_date->isPast()) ? 'overdue' : 'active',
+                                'note' => trim(((string) $targetDebt->note)."\n[MERGE POS] ".$sale->invoice_number." +Rp ".number_format($remainingForDebt, 0, ',', '.')),
+                            ]);
+                        } else {
+                            $newDebt = $this->createDebtWithUniqueNumber([
+                                'branch_id' => $user->branch_id,
+                                'customer_id' => $customer->id,
+                                'sale_id' => $sale->id,
+                                'created_by' => $user->id,
+                                'debt_date' => now()->toDateString(),
+                                'due_date' => now()->addDays(14)->toDateString(),
+                                'principal_amount' => $remainingForDebt,
+                                'paid_amount' => 0,
+                                'remaining_amount' => $remainingForDebt,
+                                'status' => 'active',
+                                'note' => trim(($note !== '' ? $note."\n" : '').'[POS] Hutang dari transaksi '.$sale->invoice_number),
+                            ]);
+                            $targetDebt = $newDebt;
+                        }
+
+                        $initialPaid = max((float) $total - $remainingForDebt, 0);
+                        if ($initialPaid > 0 && $targetDebt) {
+                            CustomerDebtPayment::query()->create([
+                                'customer_debt_id' => $targetDebt->id,
+                                'received_by' => $user->id,
+                                'paid_at' => now(),
+                                'amount' => $initialPaid,
+                                'payment_method' => $paymentMethodForDebt,
+                                'note' => 'Pembayaran saat checkout POS.',
+                            ]);
+
+                            $targetDebt->refresh();
+                            $targetDebt->update([
+                                'paid_amount' => (float) $targetDebt->paid_amount + $initialPaid,
+                                'remaining_amount' => max((float) $targetDebt->remaining_amount - $initialPaid, 0),
+                                'status' => max((float) $targetDebt->remaining_amount - $initialPaid, 0) <= 0
+                                    ? 'paid'
+                                    : (($targetDebt->due_date && $targetDebt->due_date->isPast()) ? 'overdue' : 'active'),
+                            ]);
+                        }
+                    }
+                }
+            }
+
             return $sale->load(['items', 'user']);
         });
+    }
+
+    private function createDebtWithUniqueNumber(array $attributes): CustomerDebt
+    {
+        $attempts = 0;
+        do {
+            $attempts++;
+            try {
+                return CustomerDebt::query()->create($attributes + [
+                    'number' => $this->debtNumberService->nextNumber(),
+                ]);
+            } catch (QueryException $e) {
+                $duplicate = ($e->getCode() === '23000') || str_contains(strtolower((string) $e->getMessage()), 'duplicate');
+                if (! $duplicate || $attempts >= 3) {
+                    throw $e;
+                }
+            }
+        } while ($attempts < 3);
+
+        throw new \RuntimeException('Gagal membuat nomor hutang unik.');
     }
 
     private function validateMethodOverpay(string $method, float $paidAmount, float $totalAmount, array $rules): void
@@ -377,7 +538,7 @@ class SaleService
         return sprintf('%s-%04d', $prefix, $sequence);
     }
 
-    private function resolveCustomer(array $payload): ?Customer
+    private function resolveCustomer(User $user, array $payload): ?Customer
     {
         $customerId = (int) ($payload['customer_id'] ?? 0);
         $name = trim((string) ($payload['customer_name'] ?? ''));
@@ -386,7 +547,9 @@ class SaleService
         $address = trim((string) ($payload['customer_address'] ?? ''));
 
         if ($customerId > 0) {
-            $customer = Customer::query()->find($customerId);
+            $customer = Customer::query()
+                ->where('branch_id', $user->branch_id)
+                ->find($customerId);
             if ($customer) {
                 if ($name !== '') {
                     $customer->name = $name;
@@ -404,6 +567,10 @@ class SaleService
 
                 return $customer;
             }
+
+            throw ValidationException::withMessages([
+                'customer_id' => 'Pelanggan tidak ditemukan pada cabang Anda.',
+            ]);
         }
 
         if ($name === '' && $phone === '' && $email === '' && $address === '') {
@@ -412,15 +579,23 @@ class SaleService
 
         $customer = null;
         if ($phone !== '') {
-            $customer = Customer::query()->where('phone', $phone)->first();
+            $customer = Customer::query()
+                ->where('branch_id', $user->branch_id)
+                ->where('phone', $phone)
+                ->first();
         }
 
         if (! $customer && $name !== '') {
-            $customer = Customer::query()->where('name', $name)->when($phone !== '', fn ($q) => $q->where('phone', $phone))->first();
+            $customer = Customer::query()
+                ->where('branch_id', $user->branch_id)
+                ->where('name', $name)
+                ->when($phone !== '', fn ($q) => $q->where('phone', $phone))
+                ->first();
         }
 
         if (! $customer) {
             $customer = new Customer();
+            $customer->branch_id = $user->branch_id;
             $customer->is_active = true;
         }
 

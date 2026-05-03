@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-3">
             <p class="page-kicker">Kontrol & Sistem</p>
@@ -382,6 +382,8 @@
                                     $typeMeta = match((string) $row->type) {
                                         'sale.quick_refund' => ['icon' => 'rotate-ccw', 'label' => 'Refund Cepat'],
                                         'sale.quick_void' => ['icon' => 'slash', 'label' => 'Void Cepat'],
+                                        'supplier.purchase_approval' => ['icon' => 'check-square', 'label' => 'Pembelian Supplier'],
+                                        'supplier.purchase_payment' => ['icon' => 'truck', 'label' => 'Bayar Supplier'],
                                         'report.export.pdf' => ['icon' => 'file-text', 'label' => 'Export PDF Besar'],
                                         'report.export.excel' => ['icon' => 'file', 'label' => 'Export Excel Besar'],
                                         default => ['icon' => 'clipboard', 'label' => 'Approval Umum'],
@@ -452,9 +454,11 @@
                                     $typeSlaTarget = str_starts_with((string) $row->type, 'report.export.')
                                         ? (int) data_get($summary ?? [], 'sla_minutes_export', 360)
                                         : (int) data_get($summary ?? [], 'sla_minutes_sale', 120);
-                                    $typeSlaLabel = str_starts_with((string) $row->type, 'report.export.')
+                                    $typeSlaLabel = in_array((string) $row->type, ['supplier.purchase_approval', 'supplier.purchase_payment'], true)
+                                        ? 'Target Supplier'
+                                        : (str_starts_with((string) $row->type, 'report.export.')
                                         ? 'Target Export'
-                                        : ((string) $row->type === 'sale.quick_void' ? 'Target Void' : 'Target Refund');
+                                        : ((string) $row->type === 'sale.quick_void' ? 'Target Void' : 'Target Refund'));
                                 ?>
                                 <div class="approval-metric-card">
                                     <div class="approval-metric-grid2">
@@ -1287,5 +1291,4 @@
         .approval-row-critical { border-color: #fb7185 !important; }
     </style>
 </x-app-layout>
-
 

@@ -76,6 +76,11 @@ class Sale extends Model
         return $this->hasMany(SaleItem::class);
     }
 
+    public function customerDebts(): HasMany
+    {
+        return $this->hasMany(CustomerDebt::class);
+    }
+
     public function scopePaid(Builder $query): Builder
     {
         return $query->where('status', SaleStatus::Paid->value);

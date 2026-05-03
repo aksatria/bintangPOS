@@ -8,6 +8,8 @@ use App\Models\ApprovalRequest;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleRefundItem;
+use App\Models\CustomerDebt;
+use App\Models\CustomerDebtPayment;
 use App\Models\User;
 use App\Models\StoreSetting;
 use App\Support\ActiveBranchContext;
@@ -63,7 +65,33 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
-        $sale->load(['items', 'user', 'customer']);
+        $sale->load(['items', 'user', 'customer', 'customerDebts']);
+        $customerDebtSummary = null;
+        $customerDebtRecentPayments = collect();
+        if ($sale->customer_id) {
+            $customerDebtSummary = $this->applyBranchScope(CustomerDebt::query(), request()->user())
+                ->where('customer_id', (int) $sale->customer_id)
+                ->selectRaw('COUNT(*) as debt_count, COALESCE(SUM(remaining_amount),0) as total_remaining, SUM(CASE WHEN status = "overdue" THEN 1 ELSE 0 END) as overdue_count')
+                ->first();
+
+            $customerDebtRecentPayments = CustomerDebtPayment::query()
+                ->join('customer_debts', 'customer_debts.id', '=', 'customer_debt_payments.customer_debt_id')
+                ->when(! (request()->user()?->hasAnyRole(['owner']) ?? false), function ($q) {
+                    $branchId = (int) (request()->user()?->branch_id ?? 0);
+                    if ($branchId > 0) {
+                        $q->where('customer_debts.branch_id', $branchId);
+                    }
+                })
+                ->where('customer_debts.customer_id', (int) $sale->customer_id)
+                ->orderByDesc('customer_debt_payments.paid_at')
+                ->limit(5)
+                ->get([
+                    'customer_debt_payments.amount',
+                    'customer_debt_payments.payment_method',
+                    'customer_debt_payments.paid_at',
+                    'customer_debt_payments.customer_debt_id',
+                ]);
+        }
         $correctionLogs = CashierAuditLog::query()
             ->with('user:id,name')
             ->whereIn('action', [
@@ -84,12 +112,14 @@ class SaleController extends Controller
         return view('sales.show', [
             'sale' => $sale,
             'correctionLogs' => $correctionLogs,
+            'customerDebtSummary' => $customerDebtSummary,
+            'customerDebtRecentPayments' => $customerDebtRecentPayments,
         ]);
     }
 
     public function receipt(Sale $sale)
     {
-        $sale->load(['items', 'user', 'customer']);
+        $sale->load(['items', 'user', 'customer', 'customerDebts']);
         $store = StoreSetting::query()->first();
         $itemCount = max(1, (int) $sale->items->count());
         $splitCount = (is_array($sale->payment_breakdown) ? count($sale->payment_breakdown) : 0);
@@ -106,7 +136,7 @@ class SaleController extends Controller
 
     public function receiptPrint(Sale $sale)
     {
-        $sale->load(['items', 'user', 'customer']);
+        $sale->load(['items', 'user', 'customer', 'customerDebts']);
         $store = StoreSetting::query()->first();
         $paper = request()->query('paper', '80');
         if (! in_array($paper, ['58', '80'], true)) {

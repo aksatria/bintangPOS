@@ -49,8 +49,18 @@
         </div>
         <div class="pos-success-modal-backdrop" x-show="showCheckoutSuccessModal" x-transition.opacity x-cloak>
             <div class="pos-success-modal pos-success-modal--success" x-ref="checkoutSuccessModal" x-transition tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="checkout-success-title" aria-describedby="checkout-success-desc">
-                <h3 id="checkout-success-title">Checkout Berhasil</h3>
-                <p id="checkout-success-desc" x-text="checkoutSuccessMessage"></p>
+                <div class="pos-success-head">
+                    <span class="pos-success-icon-wrap">
+                        <i data-feather="check-circle" class="w-5 h-5"></i>
+                    </span>
+                    <div>
+                        <h3 id="checkout-success-title">Transaksi Berhasil Disimpan</h3>
+                        <p class="pos-success-subtitle">Data penjualan sudah tercatat dan siap dilanjutkan.</p>
+                    </div>
+                </div>
+                <div class="pos-success-message-box">
+                    <p id="checkout-success-desc" x-text="checkoutSuccessMessage"></p>
+                </div>
                 <div class="pos-modal-actions">
                     <button type="button" class="pos-modal-btn pos-modal-btn--primary" x-ref="checkoutSuccessPrimaryBtn" @click="closeCheckoutSuccessModal()">Lanjut Transaksi</button>
                 </div>
@@ -335,11 +345,17 @@
                         <input type="hidden" name="payment_method" :value="effectivePaymentMethod">
                         <input type="hidden" name="payment_method_single" :value="paymentMethod">
                         <input type="hidden" name="split_payments_json" :value="splitPaymentsJson">
+                        <input type="hidden" name="debt_mode" :value="debtMode">
+                        <input type="hidden" name="debt_existing_id" :value="selectedDebtExistingId">
                         <input type="hidden" name="paid_amount" :value="paid">
                         <input type="hidden" name="manager_approval_email" :value="managerApprovalEmail">
                         <input type="hidden" name="manager_approval_password" :value="managerApprovalPassword">
                         <input type="hidden" name="qris_reference_id" :value="qrisReferenceId">
                         <input type="hidden" name="qris_issuer" :value="qrisIssuer">
+                        <input type="hidden" name="installment_enabled" :value="installmentEnabled ? 1 : 0">
+                        <input type="hidden" name="installment_tenor_months" :value="installmentTenorMonths">
+                        <input type="hidden" name="installment_down_payment" :value="installmentDownPayment">
+                        <input type="hidden" name="installment_first_due_date" :value="installmentFirstDueDate">
 
                         <div class="pos-cart-summary">
                             <div class="pos-cart-summary-item">
@@ -459,6 +475,33 @@
                                         <button type="button" class="btn-danger-lite" @click="appendNotePreset('Pending - follow up')">Tunda follow up</button>
                                     </div>
                                 </div>
+                                <template x-if="hasOutstandingDebt">
+                                    <div class="pos-field pos-field--wide" style="grid-column: 1 / -1;">
+                                        <label class="label-ui">Keputusan Kredit Pelanggan</label>
+                                        <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
+                                            <p>
+                                                Customer ini punya <strong x-text="customerDebtCount"></strong> piutang aktif.
+                                                Total sisa: <strong>Rp <span x-text="money(customerDebtTotal)"></span></strong>
+                                            </p>
+                                            <p class="text-xs text-amber-800">
+                                                Overdue: <strong x-text="customerOverdueCount"></strong> |
+                                                Jatuh tempo terdekat: <strong x-text="customerNearestDueDate"></strong>
+                                            </p>
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                <label class="pos-inline-toggle"><input type="radio" x-model="debtMode" value="normal"><span>Normal</span></label>
+                                                <label class="pos-inline-toggle"><input type="radio" x-model="debtMode" value="partial"><span>Bayar sebagian + hutang</span></label>
+                                                <label class="pos-inline-toggle"><input type="radio" x-model="debtMode" value="merge"><span>Gabung ke hutang lama</span></label>
+                                            </div>
+                                            <p class="text-xs text-amber-700" x-show="debtMode !== 'normal'">
+                                                Estimasi total piutang: Rp <strong x-text="money(projectedDebtAfterCheckout)"></strong>
+                                                (limit: Rp <span x-text="money(customerDebtLimit)"></span>)
+                                            </p>
+                                            @if(!empty($canCustomerDebtManage))
+                                                <a href="{{ route('customers.debts.index') }}" class="text-xs font-semibold text-blue-700 underline">Buka halaman Piutang Pelanggan</a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </template>
                                 <div class="pos-field">
                                     <label class="label-ui">Diskon</label>
                                     <div class="pos-input-wrap pos-input-wrap--amber">
@@ -477,17 +520,17 @@
                                     <label class="label-ui">Status</label>
                                     <div class="pos-input-wrap pos-input-wrap--blue">
                                         <i data-feather="credit-card" class="w-4 h-4"></i>
-                                        <select x-model="status" name="status" class="pos-input">
+                                        <select x-model="status" name="status" class="pos-input" :disabled="installmentEnabled">
                                             <option value="paid">Lunas</option>
                                             <option value="pending">Menunggu</option>
                                         </select>
                                     </div>
                                 </div>
-                                <div class="pos-field">
+                                <div class="pos-field pos-field--payment">
                                     <label class="label-ui">Metode Pembayaran</label>
                                     <div class="pos-input-wrap" :class="status !== 'paid' ? 'pos-input-wrap--disabled' : ''">
                                         <template x-if="status === 'paid'">
-                                            <div class="w-full flex items-center gap-2">
+                                            <div class="pos-payment-control">
                                                 <i data-feather="layers" class="w-4 h-4"></i>
                                                 <select x-model="paymentMethod" class="pos-input" @change="recalculate">
                                                     <option value="cash">Cash</option>
@@ -503,11 +546,11 @@
                                         </template>
                                     </div>
                                 </div>
-                                <div class="pos-field">
+                                <div class="pos-field pos-field--payment">
                                     <label class="label-ui">Jumlah Dibayar</label>
                                     <div class="pos-input-wrap pos-input-wrap--cyan" :class="status !== 'paid' ? 'pos-input-wrap--disabled' : ''">
                                         <template x-if="status === 'paid'">
-                                            <div class="w-full flex items-center gap-2">
+                                            <div class="pos-payment-control">
                                                 <span>Rp</span>
                                                 <input type="text" inputmode="numeric" x-ref="paidInput" :value="money(paid)" class="pos-input" @input="onPaidInput($event)">
                                             </div>
@@ -533,6 +576,37 @@
                                         <p class="mt-1 text-[11px] text-slate-500" x-show="qrisReferenceAuto">
                                             Referensi otomatis terisi. Anda bisa ubah manual jika ada nomor dari aplikasi pembayaran.
                                         </p>
+                                    </div>
+                                </template>
+                                <div class="pos-field pos-field--wide" style="grid-column: 1 / -1;">
+                                    <label class="pos-inline-toggle">
+                                        <input type="checkbox" x-model="installmentEnabled" @change="onToggleInstallment()">
+                                        <span>Aktifkan Transaksi Cicilan</span>
+                                    </label>
+                                </div>
+                                <template x-if="installmentEnabled">
+                                    <div class="pos-field pos-field--wide" style="grid-column: 1 / -1;">
+                                        <div class="pos-installment-grid">
+                                            <div class="pos-installment-col">
+                                                <label class="label-ui">Tenor (Bulan)</label>
+                                                <div class="pos-input-wrap">
+                                                    <input type="number" min="1" max="36" x-model.number="installmentTenorMonths" class="pos-input" @input="recalculate">
+                                                </div>
+                                            </div>
+                                            <div class="pos-installment-col">
+                                                <label class="label-ui">DP Awal</label>
+                                                <div class="pos-input-wrap pos-input-wrap--cyan">
+                                                    <span>Rp</span>
+                                                    <input type="number" min="0" step="0.01" x-model.number="installmentDownPayment" class="pos-input" @input="recalculate">
+                                                </div>
+                                            </div>
+                                            <div class="pos-installment-col">
+                                                <label class="label-ui">Jatuh Tempo Pertama</label>
+                                                <div class="pos-input-wrap">
+                                                    <input type="date" x-model="installmentFirstDueDate" class="pos-input">
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
@@ -757,13 +831,26 @@
     @php
         $posPagination = $productPagination ?? ['current_page' => 1, 'last_page' => 1, 'per_page' => 18, 'total' => 0];
         $posCurrentPage = (int) ($posPagination['current_page'] ?? 1);
-        $customerMap = $customers->map(function ($c) {
+        $debtMapArray = collect($customerDebtMap ?? [])->mapWithKeys(function ($row, $customerId) {
+            return [(int) $customerId => [
+                'debt_count' => (int) ($row->debt_count ?? 0),
+                'debt_total' => (float) ($row->debt_total ?? 0),
+                'overdue_count' => (int) ($row->overdue_count ?? 0),
+                'nearest_due_date' => !empty($row->nearest_due_date) ? (string) $row->nearest_due_date : null,
+            ]];
+        })->all();
+        $customerMap = $customers->map(function ($c) use ($debtMapArray) {
+            $debt = $debtMapArray[(int) $c->id] ?? ['debt_count' => 0, 'debt_total' => 0, 'overdue_count' => 0, 'nearest_due_date' => null];
             return [
                 'id' => $c->id,
                 'name' => $c->name,
                 'phone' => $c->phone,
                 'email' => $c->email,
                 'address' => $c->address,
+                'debt_count' => (int) ($debt['debt_count'] ?? 0),
+                'debt_total' => (float) ($debt['debt_total'] ?? 0),
+                'overdue_count' => (int) ($debt['overdue_count'] ?? 0),
+                'nearest_due_date' => $debt['nearest_due_date'] ?? null,
             ];
         })->values();
     @endphp
@@ -783,6 +870,10 @@
                 paid: 0,
                 status: 'paid',
                 paymentMethod: 'cash',
+                installmentEnabled: false,
+                installmentTenorMonths: 3,
+                installmentDownPayment: 0,
+                installmentFirstDueDate: '',
                 splitPaymentEnabled: false,
                 splitPayments: [
                     { method: 'cash', amount: 0 },
@@ -824,6 +915,9 @@
                 isSubmitting: false,
                 activeHoldId: '',
                 selectedCustomerId: '',
+                debtMode: 'normal',
+                selectedDebtExistingId: '',
+                customerDebtLimit: Number(@json($customerDebtLimit ?? 20000000)),
                 checkoutToken: '',
                 soundEnabled: true,
                 uiPrefKey: 'pos_ui_prefs_v1',
@@ -892,6 +986,11 @@
 
                 initApp() {
                     this.checkoutToken = this.generateCheckoutToken();
+                    if (!this.installmentFirstDueDate) {
+                        const base = new Date();
+                        base.setMonth(base.getMonth() + 1);
+                        this.installmentFirstDueDate = base.toISOString().slice(0, 10);
+                    }
                     this.favoriteProductKey = `pos_fav_products_v1_${this.authUserId || 'guest'}`;
                     this.checkoutDraftKey = `pos_checkout_draft_v2_${this.authUserId || 'guest'}`;
                     this.checkoutDraftLegacyKey = `pos_checkout_draft_v1_${this.authUserId || 'guest'}`;
@@ -1114,6 +1213,7 @@
                     const raw = (this.$refs.customerNameInput?.value || '').trim().toLowerCase();
                     if (!raw) {
                         this.selectedCustomerId = '';
+                        this.debtMode = 'normal';
                         return;
                     }
                     const found = (this.customerMap || []).find(c => {
@@ -1124,13 +1224,44 @@
                     });
                     if (!found) {
                         this.selectedCustomerId = '';
+                        this.debtMode = 'normal';
                         return;
                     }
                     this.selectedCustomerId = String(found.id || '');
+                    this.debtMode = Number(found.debt_count || 0) > 0 ? 'partial' : 'normal';
                     if (this.$refs.customerNameInput && found.name) this.$refs.customerNameInput.value = found.name;
                     if (this.$refs.customerPhoneInput) this.$refs.customerPhoneInput.value = found.phone || '';
                     if (this.$refs.customerEmailInput) this.$refs.customerEmailInput.value = found.email || '';
                     if (this.$refs.customerAddressInput) this.$refs.customerAddressInput.value = found.address || '';
+                },
+                get selectedCustomer() {
+                    return (this.customerMap || []).find(c => String(c.id) === String(this.selectedCustomerId || '')) || null;
+                },
+                get hasOutstandingDebt() {
+                    return Number(this.selectedCustomer?.debt_count || 0) > 0;
+                },
+                get customerDebtCount() {
+                    return Number(this.selectedCustomer?.debt_count || 0);
+                },
+                get customerDebtTotal() {
+                    return Number(this.selectedCustomer?.debt_total || 0);
+                },
+                get customerOverdueCount() {
+                    return Number(this.selectedCustomer?.overdue_count || 0);
+                },
+                get customerNearestDueDate() {
+                    const raw = String(this.selectedCustomer?.nearest_due_date || '').trim();
+                    if (!raw) return '-';
+                    const date = new Date(raw + 'T00:00:00');
+                    if (Number.isNaN(date.getTime())) return raw;
+                    return date.toLocaleDateString('id-ID');
+                },
+                get projectedDebtAfterCheckout() {
+                    const base = this.customerDebtTotal;
+                    if (!this.hasOutstandingDebt || this.debtMode === 'normal') return base;
+                    if (this.debtMode === 'merge') return base + Number(this.total || 0);
+                    const remaining = Math.max(Number(this.total || 0) - Number(this.paid || 0), 0);
+                    return base + remaining;
                 },
 
                 loadUiPrefs() {
@@ -1660,6 +1791,10 @@
                 },
 
                 recalculate() {
+                    if (this.installmentEnabled) {
+                        this.status = 'pending';
+                        this.paymentMethod = 'installment';
+                    }
                     this.cart.forEach(item => {
                         if (item.quantity < 1) item.quantity = 1;
                         if (item.quantity > item.stock) item.quantity = item.stock;
@@ -1684,7 +1819,11 @@
                         this.splitDelta = 0;
                         this.payShortfall = 0;
                         this.change = 0;
-                        this.paid = 0;
+                        this.paid = this.installmentEnabled ? Math.max(Number(this.installmentDownPayment || 0), 0) : 0;
+                        if (this.installmentEnabled && this.paid > this.total) {
+                            this.paid = this.total;
+                            this.installmentDownPayment = this.total;
+                        }
                         this.qrisReferenceAuto = false;
                         this.itemsJson = JSON.stringify(this.cart.map(item => ({
                             product_id: item.id,
@@ -1771,6 +1910,18 @@
                     this.saveCheckoutDraft();
                 },
 
+                onToggleInstallment() {
+                    if (this.installmentEnabled) {
+                        this.status = 'pending';
+                        this.paymentMethod = 'installment';
+                        this.splitPaymentEnabled = false;
+                    } else if (this.status !== 'paid') {
+                        this.status = 'paid';
+                        this.paymentMethod = 'cash';
+                    }
+                    this.recalculate();
+                },
+
                 async prepareSubmit(event) {
                     // Hard sync from real checkbox UI to prevent stale split state.
                     if (this.$refs.splitPaymentToggle) {
@@ -1790,6 +1941,15 @@
                             paid: this.paid
                         });
                         return;
+                    }
+                    if (this.hasOutstandingDebt && this.debtMode !== 'normal' && this.projectedDebtAfterCheckout > Number(this.customerDebtLimit || 0)) {
+                        this.pushToast('error', 'Limit Piutang Terlampaui', `Estimasi piutang melebihi limit Rp ${this.money(this.customerDebtLimit)}.`);
+                        return;
+                    }
+                    if (this.debtMode === 'merge') {
+                        this.status = 'pending';
+                        this.paid = 0;
+                        this.recalculate();
                     }
 
                     const form = event.target?.closest?.('form');
@@ -2092,6 +2252,14 @@
                 get canSubmit() {
                     if (this.cart.length === 0) return false;
                     if (this.cart.some(item => Number(item.stock || 0) <= 0 || Number(item.quantity || 0) <= 0)) return false;
+                    if (this.installmentEnabled) {
+                        const customerName = String(this.$refs?.customerNameInput?.value || '').trim();
+                        if (customerName === '' && String(this.selectedCustomerId || '').trim() === '') return false;
+                        const dp = Number(this.installmentDownPayment || 0);
+                        if (dp < 0) return false;
+                        if (dp > Number(this.total || 0)) return false;
+                        return true;
+                    }
                     if (this.status !== 'paid') return true;
                     if (this.splitPaymentEnabled) {
                         if (this.splitValidationError) return false;
@@ -2103,6 +2271,7 @@
                 },
 
                 get effectivePaymentMethod() {
+                    if (this.installmentEnabled) return 'installment';
                     return (this.status === 'paid' && this.splitPaymentEnabled) ? 'mixed' : this.paymentMethod;
                 },
 
@@ -2496,6 +2665,10 @@
                             paid: Number(this.paid || 0),
                             status: String(this.status || 'paid'),
                             paymentMethod: String(this.paymentMethod || 'cash'),
+                            installmentEnabled: Boolean(this.installmentEnabled),
+                            installmentTenorMonths: Number(this.installmentTenorMonths || 3),
+                            installmentDownPayment: Number(this.installmentDownPayment || 0),
+                            installmentFirstDueDate: String(this.installmentFirstDueDate || ''),
                             splitPaymentEnabled: Boolean(this.splitPaymentEnabled),
                             splitPayments: Array.isArray(this.splitPayments) ? this.splitPayments : [],
                             qrisReferenceId: String(this.qrisReferenceId || ''),
@@ -2523,6 +2696,10 @@
                         paid: Number(rawDraft.paid || 0),
                         status: String(rawDraft.status || 'paid'),
                         paymentMethod: String(rawDraft.paymentMethod || 'cash'),
+                        installmentEnabled: Boolean(rawDraft.installmentEnabled || false),
+                        installmentTenorMonths: Number(rawDraft.installmentTenorMonths || 3),
+                        installmentDownPayment: Number(rawDraft.installmentDownPayment || 0),
+                        installmentFirstDueDate: String(rawDraft.installmentFirstDueDate || ''),
                         splitPaymentEnabled: Boolean(rawDraft.splitPaymentEnabled),
                         splitPayments: Array.isArray(rawDraft.splitPayments) && rawDraft.splitPayments.length > 0
                             ? rawDraft.splitPayments
@@ -2557,6 +2734,10 @@
                         this.paid = draft.paid;
                         this.status = draft.status;
                         this.paymentMethod = draft.paymentMethod;
+                        this.installmentEnabled = draft.installmentEnabled;
+                        this.installmentTenorMonths = draft.installmentTenorMonths;
+                        this.installmentDownPayment = draft.installmentDownPayment;
+                        this.installmentFirstDueDate = draft.installmentFirstDueDate;
                         this.splitPaymentEnabled = draft.splitPaymentEnabled;
                         this.splitPayments = draft.splitPayments;
                         this.qrisReferenceId = draft.qrisReferenceId;

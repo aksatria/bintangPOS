@@ -31,6 +31,16 @@
     @php
         $qrisRef = null;
         $qrisIssuer = null;
+        $hasLinkedDebt = $sale->relationLoaded('customerDebts') && $sale->customerDebts->isNotEmpty();
+        $linkedDebt = $hasLinkedDebt ? $sale->customerDebts->sortByDesc('id')->first() : null;
+        $remainingDue = max((float) $sale->total_amount - (float) $sale->paid_amount, 0);
+        $paymentMethod = (string) ($sale->payment_method ?? 'cash');
+        $paymentMethodLabel = match ($paymentMethod) {
+            'e_wallet' => 'E-WALLET',
+            'mixed' => 'SPLIT',
+            'installment' => 'CICILAN',
+            default => strtoupper(str_replace('_', ' ', $paymentMethod)),
+        };
         if (preg_match_all('/\[QRIS\]\s*Ref:\s*(.*?)\s*\|\s*Issuer:\s*(.*)/', (string) ($sale->note ?? ''), $qrisMatches, PREG_SET_ORDER) && count($qrisMatches) > 0) {
             $lastQris = $qrisMatches[count($qrisMatches) - 1];
             $qrisRef = trim((string) ($lastQris[1] ?? ''));
@@ -77,7 +87,7 @@
         <tr><td class="tot">Total</td><td class="right nowrap tot">Rp {{ number_format($sale->total_amount, 0, ',', '.') }}</td></tr>
         <tr><td>Status</td><td class="right">{{ $sale->status->value === 'paid' ? 'LUNAS' : ($sale->status->value === 'pending' ? 'PENDING' : 'BATAL') }}</td></tr>
         @if($sale->status->value === 'paid')
-            <tr><td>Metode</td><td class="right">{{ strtoupper(str_replace('_', ' ', (string) ($sale->payment_method ?? 'cash'))) }}</td></tr>
+            <tr><td>Metode</td><td class="right">{{ $paymentMethodLabel }}</td></tr>
             @if($qrisRef || $qrisIssuer)
                 <tr><td>Ref QRIS</td><td class="right">{{ $qrisRef ?: '-' }}</td></tr>
                 <tr><td>Issuer</td><td class="right">{{ $qrisIssuer ?: '-' }}</td></tr>
@@ -94,8 +104,12 @@
                 @endforeach
             @endif
         @else
-            <tr><td>Metode</td><td class="right">BELUM DIBAYAR</td></tr>
-            <tr><td>Dibayar</td><td class="right nowrap">Rp 0</td></tr>
+            <tr><td>Metode</td><td class="right">{{ $paymentMethod === 'installment' ? 'CICILAN (PENDING)' : ($hasLinkedDebt ? 'HUTANG (PENDING)' : 'BELUM DIBAYAR') }}</td></tr>
+            <tr><td>Dibayar</td><td class="right nowrap">Rp {{ number_format($sale->paid_amount, 0, ',', '.') }}</td></tr>
+            <tr><td>Kurang Bayar</td><td class="right nowrap">Rp {{ number_format($remainingDue, 0, ',', '.') }}</td></tr>
+            @if($linkedDebt && $linkedDebt->due_date)
+                <tr><td>Jatuh Tempo</td><td class="right">{{ $linkedDebt->due_date->format('d/m/Y') }}</td></tr>
+            @endif
             <tr><td>Kembalian</td><td class="right nowrap">Rp 0</td></tr>
         @endif
     </table>

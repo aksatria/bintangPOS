@@ -6,6 +6,7 @@ use App\Enums\SaleStatus;
 use App\Models\AuditAlertState;
 use App\Models\CashierAuditLog;
 use App\Models\CustomerFollowUp;
+use App\Models\CustomerDebtPayment;
 use App\Models\Expense;
 use App\Models\CashReconciliation;
 use App\Models\Product;
@@ -15,6 +16,8 @@ use App\Models\StoreSetting;
 use App\Models\User;
 use App\Models\StockTransfer;
 use App\Models\Branch;
+use App\Models\CustomerDebt;
+use App\Models\SupplierPurchase;
 use App\Support\TelegramNotifier;
 use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
@@ -271,6 +274,18 @@ class DashboardController extends Controller
 
         $grossProfitRange = $omzetRange - $hppRange;
         $netProfitRange = $grossProfitRange - $expensesRange;
+        $creditSalesRange = (float) $this->applyBranchScope(CustomerDebt::query(), auth()->user())
+            ->whereBetween('debt_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('principal_amount');
+        $installmentCashInRange = (float) CustomerDebtPayment::query()
+            ->join('customer_debts', 'customer_debts.id', '=', 'customer_debt_payments.customer_debt_id')
+            ->when(! $isOwner && $actorBranchId > 0, fn ($q) => $q->where('customer_debts.branch_id', $actorBranchId))
+            ->whereBetween('customer_debt_payments.paid_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+            ->sum('customer_debt_payments.amount');
+        $outstandingDebtTotal = (float) $this->applyBranchScope(CustomerDebt::query(), auth()->user())
+            ->whereIn('status', ['active', 'overdue'])
+            ->sum('remaining_amount');
+        $accrualRevenueRange = $omzetRange + $creditSalesRange;
 
         $previousStart = $startDate->copy()->subDays($periodDays);
         $previousEnd = $startDate->copy()->subDay();
@@ -507,6 +522,8 @@ class DashboardController extends Controller
         }
 
         $branchTransferKpis = $this->buildBranchTransferKpis(auth()->user());
+        $branchDebtKpis = $this->buildBranchDebtKpis(auth()->user());
+        $branchSupplierDebtKpis = $this->buildBranchSupplierDebtKpis(auth()->user());
 
         session()->put($prefKey, [
             'preset' => $preset,
@@ -554,6 +571,10 @@ class DashboardController extends Controller
             'recentExpenses' => $recentExpenses,
             'grossProfitRange' => $grossProfitRange,
             'netProfitRange' => $netProfitRange,
+            'creditSalesRange' => $creditSalesRange,
+            'installmentCashInRange' => $installmentCashInRange,
+            'outstandingDebtTotal' => $outstandingDebtTotal,
+            'accrualRevenueRange' => $accrualRevenueRange,
             'kpiComparisons' => $kpiComparisons,
             'insights' => $insights,
             'previousPeriodText' => $previousStart->translatedFormat('d M Y').' - '.$previousEnd->translatedFormat('d M Y'),
@@ -576,6 +597,8 @@ class DashboardController extends Controller
             'followupSummary' => $followupSummary,
             'cashReconSummary' => $cashReconSummary,
             'branchTransferKpis' => $branchTransferKpis,
+            'branchDebtKpis' => $branchDebtKpis,
+            'branchSupplierDebtKpis' => $branchSupplierDebtKpis,
         ]];
     }
 
@@ -648,6 +671,74 @@ class DashboardController extends Controller
             })
             ->sortByDesc('total_transfer')
             ->values();
+    }
+
+    private function buildBranchDebtKpis(?User $user)
+    {
+        $activeBranchId = (int) (ActiveBranchContext::resolveBranchId($user) ?? 0);
+        $isOwner = $user?->hasAnyRole(['owner']) ?? false;
+
+        $query = CustomerDebt::query()->whereIn('status', ['active', 'overdue']);
+        if (! $isOwner && $activeBranchId > 0) {
+            $query->where('branch_id', $activeBranchId);
+        }
+
+        $rows = $query
+            ->selectRaw('branch_id, COUNT(*) as active_count, SUM(CASE WHEN status = "overdue" THEN 1 ELSE 0 END) as overdue_count, COALESCE(SUM(remaining_amount),0) as total_remaining')
+            ->groupBy('branch_id')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return collect();
+        }
+
+        $branchNames = Branch::query()->whereIn('id', $rows->pluck('branch_id')->filter()->all())->pluck('name', 'id');
+
+        return $rows->map(function ($row) use ($branchNames) {
+            $activeCount = (int) ($row->active_count ?? 0);
+            $overdueCount = (int) ($row->overdue_count ?? 0);
+            return [
+                'branch_name' => (string) ($branchNames[(int) $row->branch_id] ?? ('Branch #'.(int) $row->branch_id)),
+                'active_count' => $activeCount,
+                'overdue_count' => $overdueCount,
+                'total_remaining' => (float) ($row->total_remaining ?? 0),
+                'overdue_rate' => $activeCount > 0 ? round(($overdueCount / $activeCount) * 100, 2) : 0.0,
+            ];
+        })->sortByDesc('total_remaining')->values();
+    }
+
+    private function buildBranchSupplierDebtKpis(?User $user)
+    {
+        $activeBranchId = (int) (ActiveBranchContext::resolveBranchId($user) ?? 0);
+        $isOwner = $user?->hasAnyRole(['owner']) ?? false;
+
+        $query = SupplierPurchase::query()->whereIn('payment_status', ['unpaid', 'partial', 'overdue']);
+        if (! $isOwner && $activeBranchId > 0) {
+            $query->where('branch_id', $activeBranchId);
+        }
+
+        $rows = $query
+            ->selectRaw('branch_id, COUNT(*) as open_count, SUM(CASE WHEN payment_status = "overdue" THEN 1 ELSE 0 END) as overdue_count, COALESCE(SUM(remaining_amount),0) as total_outstanding')
+            ->groupBy('branch_id')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return collect();
+        }
+
+        $branchNames = Branch::query()->whereIn('id', $rows->pluck('branch_id')->filter()->all())->pluck('name', 'id');
+
+        return $rows->map(function ($row) use ($branchNames) {
+            $openCount = (int) ($row->open_count ?? 0);
+            $overdueCount = (int) ($row->overdue_count ?? 0);
+            return [
+                'branch_name' => (string) ($branchNames[(int) $row->branch_id] ?? ('Branch #'.(int) $row->branch_id)),
+                'open_count' => $openCount,
+                'overdue_count' => $overdueCount,
+                'total_outstanding' => (float) ($row->total_outstanding ?? 0),
+                'overdue_rate' => $openCount > 0 ? round(($overdueCount / $openCount) * 100, 2) : 0.0,
+            ];
+        })->sortByDesc('total_outstanding')->values();
     }
 
     public static function compactRupiah(float|int $value): string

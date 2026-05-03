@@ -8,6 +8,8 @@ use App\Models\CashierAuditLog;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StoreSetting;
+use App\Models\SupplierPurchase;
+use App\Models\SupplierPurchasePayment;
 use App\Models\User;
 use App\Support\AppliesBranchScope;
 use App\Support\BusinessHourSla;
@@ -668,6 +670,15 @@ class ApprovalRequestController extends Controller
         }
 
         $payload = is_array($approval->payload) ? $approval->payload : [];
+        if ($approval->type === 'supplier.purchase_payment') {
+            $this->executeSupplierPurchasePayment($approval, $request);
+            return;
+        }
+        if ($approval->type === 'supplier.purchase_approval') {
+            $this->executeSupplierPurchaseApproval($approval, $request);
+            return;
+        }
+
         $saleId = (int) ($payload['sale_id'] ?? 0);
         $reason = trim((string) ($payload['reason'] ?? ''));
 
@@ -690,6 +701,112 @@ class ApprovalRequestController extends Controller
 
         throw ValidationException::withMessages([
             'review_note' => 'Tipe approval tidak didukung.',
+        ]);
+    }
+
+    private function executeSupplierPurchasePayment(ApprovalRequest $approval, Request $request): void
+    {
+        $payload = is_array($approval->payload) ? $approval->payload : [];
+        $purchaseId = (int) ($payload['supplier_purchase_id'] ?? 0);
+        $amount = (float) ($payload['amount'] ?? 0);
+        $method = (string) ($payload['payment_method'] ?? 'cash');
+
+        if ($purchaseId <= 0 || $amount <= 0 || ! in_array($method, ['cash', 'transfer', 'debit', 'qris', 'e_wallet'], true)) {
+            throw ValidationException::withMessages([
+                'review_note' => 'Payload pembayaran supplier tidak valid.',
+            ]);
+        }
+
+        $purchaseQuery = $request->user()?->hasAnyRole(['owner'])
+            ? SupplierPurchase::query()
+            : $this->applyBranchScope(SupplierPurchase::query(), $request->user());
+        $purchase = $purchaseQuery->lockForUpdate()->findOrFail($purchaseId);
+
+        if (! in_array($purchase->status, ['draft', 'received'], true)) {
+            throw ValidationException::withMessages([
+                'review_note' => 'Status pembelian supplier sudah tidak bisa dibayar.',
+            ]);
+        }
+
+        if ((float) $purchase->remaining_amount <= 0) {
+            throw ValidationException::withMessages([
+                'review_note' => 'Hutang supplier ini sudah lunas.',
+            ]);
+        }
+
+        $paymentAmount = min($amount, (float) $purchase->remaining_amount);
+        SupplierPurchasePayment::query()->create([
+            'supplier_purchase_id' => $purchase->id,
+            'received_by' => $request->user()?->id,
+            'paid_at' => now(),
+            'amount' => $paymentAmount,
+            'payment_method' => $method,
+            'note' => '[APPROVED] '.trim((string) ($payload['reason'] ?? 'Pembayaran supplier berisiko.')),
+        ]);
+
+        $newPaid = (float) $purchase->paid_amount + $paymentAmount;
+        $newRemaining = max((float) $purchase->total_amount - $newPaid, 0);
+        $newStatus = $newRemaining <= 0
+            ? 'paid'
+            : (($purchase->due_date && $purchase->due_date->isPast()) ? 'overdue' : 'partial');
+
+        $purchase->update([
+            'paid_amount' => $newPaid,
+            'remaining_amount' => $newRemaining,
+            'payment_status' => $newStatus,
+            'paid_at' => $newRemaining <= 0 ? now() : $purchase->paid_at,
+        ]);
+
+        CashierAuditLog::query()->create([
+            'user_id' => $request->user()?->id,
+            'branch_id' => $purchase->branch_id,
+            'action' => 'supplier_purchase_paid',
+            'context' => [
+                'approval_id' => $approval->id,
+                'supplier_purchase_id' => $purchase->id,
+                'number' => $purchase->number,
+                'payment_amount' => $paymentAmount,
+                'remaining_amount' => $newRemaining,
+                'payment_status' => $newStatus,
+                'approved_via_queue' => true,
+            ],
+            'ip_address' => (string) $request->ip(),
+            'user_agent' => (string) ($request->userAgent() ?? ''),
+        ]);
+    }
+
+    private function executeSupplierPurchaseApproval(ApprovalRequest $approval, Request $request): void
+    {
+        $payload = is_array($approval->payload) ? $approval->payload : [];
+        $purchaseId = (int) ($payload['supplier_purchase_id'] ?? 0);
+        if ($purchaseId <= 0) {
+            throw ValidationException::withMessages([
+                'review_note' => 'Payload persetujuan pembelian supplier tidak valid.',
+            ]);
+        }
+
+        $purchaseQuery = $request->user()?->hasAnyRole(['owner'])
+            ? SupplierPurchase::query()
+            : $this->applyBranchScope(SupplierPurchase::query(), $request->user());
+        $purchase = $purchaseQuery->findOrFail($purchaseId);
+        if ($purchase->status !== 'draft') {
+            throw ValidationException::withMessages([
+                'review_note' => 'Pembelian supplier sudah tidak berstatus draft.',
+            ]);
+        }
+
+        CashierAuditLog::query()->create([
+            'user_id' => $request->user()?->id,
+            'branch_id' => $purchase->branch_id,
+            'action' => 'supplier_purchase_approved',
+            'context' => [
+                'approval_id' => $approval->id,
+                'supplier_purchase_id' => $purchase->id,
+                'number' => $purchase->number,
+                'total_amount' => (float) $purchase->total_amount,
+            ],
+            'ip_address' => (string) $request->ip(),
+            'user_agent' => (string) ($request->userAgent() ?? ''),
         ]);
     }
 

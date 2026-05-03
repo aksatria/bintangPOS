@@ -43,27 +43,7 @@
         .cg-chip-off { color: #b91c1c; border-color: #fecaca; background: #fff1f2; }
         .cg-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
         .cg-empty { text-align: center; color: #64748b; padding: 1rem; }
-        .cg-pagination nav { display: flex; align-items: center; justify-content: space-between; gap: .7rem; flex-wrap: wrap; }
-        .cg-pagination nav > div:first-child { display: none; }
-        .cg-pagination nav p { margin: 0; font-size: .82rem; color: #64748b; }
-        .cg-pagination nav span[aria-current="page"] span,
-        .cg-pagination nav a,
-        .cg-pagination nav span[aria-disabled="true"] span {
-            min-width: 2.2rem;
-            height: 2.2rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
-            background: #fff;
-            color: #334155;
-            font-size: .82rem;
-            font-weight: 600;
-        }
-        .cg-pagination nav a:hover { background: #f8fafc; border-color: #bfdbfe; color: #1d4ed8; }
-        .cg-pagination nav span[aria-current="page"] span { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
-        .cg-pagination nav span[aria-disabled="true"] span { opacity: .45; }
+        .cg-pagination { margin-top: .15rem; }
     </style>
 
     <div class="cg-shell intro-y space-y-4">
@@ -105,7 +85,7 @@
                                 </div>
                                 <p class="cg-item-desc">{{ $category->description ?: '-' }}</p>
                                 <div class="cg-actions">
-                                    <form method="POST" action="{{ route('admin.categories.update', $category) }}" class="contents">
+                                    <form method="POST" action="{{ route('admin.categories.update', $category) }}" class="contents" data-ajax-form="1">
                                         @csrf
                                         @method('PUT')
                                         <input type="hidden" name="name" value="{{ $category->name }}">
@@ -114,7 +94,7 @@
                                         <button class="cg-btn" type="submit"><i data-feather="power" class="cg-btn-icon"></i>{{ $category->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
                                     </form>
                                     <button class="cg-btn" type="button" onclick="openEditCategory({{ $category->id }}, @js($category->name), @js($category->description), {{ $category->is_active ? 'true' : 'false' }})"><i data-feather="edit-3" class="cg-btn-icon"></i>Edit</button>
-                                    <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="contents" onsubmit="return confirm('Hapus kategori ini?')">
+                                    <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="contents" onsubmit="return confirm('Hapus kategori ini?')" data-ajax-form="1">
                                         @csrf
                                         @method('DELETE')
                                         <button class="cg-btn" type="submit"><i data-feather="trash-2" class="cg-btn-icon"></i>Hapus</button>
@@ -133,7 +113,7 @@
                 <div class="cg-card">
                     <div class="cg-headbar"><h3 class="cg-card-title">Tambah Kategori</h3></div>
                     <div class="cg-body space-y-2">
-                        <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-2">
+                        <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-2" data-ajax-form="1">
                             @csrf
                             <label>
                                 <span class="cg-label">Nama Kategori</span>
@@ -165,7 +145,7 @@
     <div id="edit-category-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/55 p-4">
         <div class="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-4 shadow-2xl">
             <h3 class="text-base font-semibold text-slate-900">Edit Kategori</h3>
-            <form id="edit-category-form" method="POST" class="mt-3 space-y-2">
+            <form id="edit-category-form" method="POST" class="mt-3 space-y-2" data-ajax-form="1">
                 @csrf
                 @method('PUT')
                 <label>
@@ -188,6 +168,8 @@
     </div>
 
     <script>
+        const showCategoryToast = (message, type = 'success') => (window.AppUI?.toast ? window.AppUI.toast(message, type) : null);
+
         function openEditCategory(id, name, description, isActive) {
             const modal = document.getElementById('edit-category-modal');
             const form = document.getElementById('edit-category-form');
@@ -209,6 +191,52 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
+
+        async function submitCategoryAjax(form) {
+            const body = new FormData(form);
+            const method = (body.get('_method') || form.method || 'POST').toString().toUpperCase();
+            const response = await fetch(form.action, {
+                method: method === 'GET' ? 'POST' : method,
+                body,
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) {
+                let message = 'Terjadi kesalahan.';
+                try {
+                    const err = await response.json();
+                    if (err?.message) message = err.message;
+                    if (err?.errors && typeof err.errors === 'object') {
+                        const first = Object.values(err.errors)[0];
+                        if (Array.isArray(first) && first[0]) message = first[0];
+                    }
+                } catch (_) {}
+                throw new Error(message);
+            }
+            return response;
+        }
+
+        document.querySelectorAll('form[data-ajax-form="1"]').forEach((form) => {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                try {
+                    await submitCategoryAjax(form);
+                    showCategoryToast('Perubahan berhasil disimpan.');
+                    window.location.reload();
+                } catch (error) {
+                    showCategoryToast(error?.message || 'Terjadi kesalahan.', 'error');
+                }
+            });
+        });
+
+        document.getElementById('edit-category-modal')?.addEventListener('click', (event) => {
+            if (event.target?.id === 'edit-category-modal') closeEditCategory();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeEditCategory();
+        });
+
         if (window.feather && typeof window.feather.replace === 'function') {
             window.feather.replace();
         }

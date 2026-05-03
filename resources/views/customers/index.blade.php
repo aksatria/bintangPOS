@@ -10,7 +10,7 @@
         </div>
     </x-slot>
 
-    <div class="page-shell space-y-6">
+    <div class="page-shell customer-module space-y-6">
         <div class="customer-kpi-grid">
             <div class="customer-kpi-card customer-kpi-card--blue">
                 <span>Total Aktif</span>
@@ -101,14 +101,14 @@
                 <h3 class="text-base font-bold text-slate-900">Database Customer</h3>
             </div>
             <div class="overflow-x-auto customer-table-wrap customer-table-shell">
-                <table class="table-ui customer-table">
+                <table class="table-ui customer-table customer-db-table">
                     <thead>
                         <tr>
-                            <th class="w-[24%]">Nama</th>
-                            <th class="w-[20%]">Kontak</th>
+                            <th>Nama</th>
+                            <th>Kontak</th>
                             <th class="text-right">Total Transaksi</th>
                             <th class="text-right">Total Belanja</th>
-                            <th class="w-[16%]">Aksi</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -138,13 +138,13 @@
                             <tr class="customer-row">
                                 <td>
                                     <a href="{{ route('customers.show', $customer) }}" class="customer-name-link">{{ $customer->name }}</a>
-                                    <div class="mt-2">
+                                    <div class="mt-2 customer-tag-row">
                                         <span class="status-chip customer-status-chip {{ $customer->is_active ? 'status-paid' : 'status-cancelled' }}">
                                             {{ $customer->is_active ? 'AKTIF' : 'NONAKTIF' }}
                                         </span>
-                                        <span class="customer-health-pill {{ $healthClass }} ml-1">Health {{ $healthScore }}</span>
+                                        <span class="customer-health-pill {{ $healthClass }}">Health {{ $healthScore }}</span>
                                         @if((int) ($customer->pending_sales_count ?? 0) > 0)
-                                            <span class="status-chip customer-pending-chip ml-1">
+                                            <span class="status-chip customer-pending-chip">
                                                 Pending {{ number_format((int) $customer->pending_sales_count, 0, ',', '.') }}
                                             </span>
                                         @endif
@@ -157,7 +157,7 @@
                                 <td class="text-right">
                                     <span class="customer-qty-pill">{{ number_format($customer->paid_sales_count, 0, ',', '.') }}</span>
                                 </td>
-                                <td class="text-right customer-amount-cell">Rp {{ number_format($totalBelanja, 0, ',', '.') }}</td>
+                                <td class="text-right customer-amount-cell whitespace-nowrap">Rp {{ number_format($totalBelanja, 0, ',', '.') }}</td>
                                 <td>
                                     <div class="customer-actions">
                                         <a href="{{ route('customers.show', $customer) }}" class="customer-btn customer-btn--info">Detail</a>
@@ -215,14 +215,14 @@
                                     <div class="customer-contact-sub">
                                         @if($row['inactive_days'] !== null)
                                             <span class="customer-aging-chip {{ $row['inactive_days'] >= 60 ? 'customer-aging-chip--critical' : ($row['inactive_days'] >= 30 ? 'customer-aging-chip--warning' : 'customer-aging-chip--normal') }}">
-                                                {{ $row['inactive_days'] }} hari tidak belanja
+                                                {{ number_format((int) $row['inactive_days'], 0, ',', '.') }} hari tidak belanja
                                             </span>
                                         @else
                                             Belum ada transaksi paid
                                         @endif
                                     </div>
                                 </td>
-                                <td class="text-right customer-amount-cell">Rp {{ number_format($row['total_spending'], 0, ',', '.') }}</td>
+                                <td class="text-right customer-amount-cell whitespace-nowrap">Rp {{ number_format($row['total_spending'], 0, ',', '.') }}</td>
                                 <td>
                                     <a href="{{ route('customers.show', $row['id']) }}" class="customer-btn customer-btn--info">Lihat Detail</a>
                                 </td>

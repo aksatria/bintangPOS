@@ -9,7 +9,7 @@
         </div>
     </x-slot>
 
-    <div class="page-shell space-y-6">
+    <div class="page-shell customer-module space-y-6">
         <div class="customer-kpi-grid">
             <div class="customer-kpi-card customer-kpi-card--blue"><span>Total</span><strong>{{ number_format($summary['total'], 0, ',', '.') }}</strong></div>
             <div class="customer-kpi-card customer-kpi-card--amber"><span>Baru</span><strong>{{ number_format($summary['baru'], 0, ',', '.') }}</strong></div>
@@ -39,6 +39,10 @@
         </form>
 
         <div class="panel-card overflow-hidden">
+            <div class="panel-head">
+                <h3 class="text-base font-semibold text-slate-900">Daftar Follow-up</h3>
+                <p class="text-xs text-slate-500 mt-1">Update status follow-up tanpa pindah halaman.</p>
+            </div>
             <div class="overflow-x-auto customer-table-wrap customer-table-shell">
                 <table class="table-ui customer-table">
                     <thead>
@@ -68,7 +72,7 @@
                                 <td class="text-right">
                                     <div class="flex flex-wrap justify-end gap-2">
                                         @foreach(['proses' => 'Proses', 'selesai' => 'Selesai', 'gagal' => 'Gagal'] as $value => $label)
-                                            <form method="POST" action="{{ route('customers.followups.status', $item) }}">
+                                            <form method="POST" action="{{ route('customers.followups.status', $item) }}" data-ajax-form="1" data-row-id="{{ $item->id }}">
                                                 @csrf
                                                 @method('PATCH')
                                                 <input type="hidden" name="status" value="{{ $value }}">
@@ -92,4 +96,49 @@
             <div class="p-4 border-t border-slate-100">{{ $queue->links() }}</div>
         </div>
     </div>
+
+    <script>
+        (() => {
+            const toast = (message, type = 'success') => (window.AppUI?.toast ? window.AppUI.toast(message, type) : null);
+
+            function badgeClass(status) {
+                if (status === 'selesai') return 'customer-sale-status customer-sale-status--paid';
+                if (status === 'gagal') return 'customer-sale-status customer-sale-status--cancelled';
+                return 'customer-sale-status customer-sale-status--pending';
+            }
+
+            document.querySelectorAll('form[data-ajax-form="1"]').forEach((form) => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const button = form.querySelector('button[type="submit"], button:not([type])');
+                    const row = form.closest('tr');
+                    const statusInput = form.querySelector('input[name="status"]');
+                    const nextStatus = (statusInput?.value || '').toLowerCase();
+
+                    if (button) button.disabled = true;
+                    try {
+                        const body = new FormData(form);
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                            credentials: 'same-origin',
+                        });
+                        if (!response.ok) throw new Error('Gagal memperbarui status follow-up.');
+
+                        const statusBadge = row?.querySelector('.customer-sale-status');
+                        if (statusBadge && nextStatus) {
+                            statusBadge.className = badgeClass(nextStatus);
+                            statusBadge.textContent = nextStatus.toUpperCase();
+                        }
+                        toast('Status follow-up berhasil diperbarui.');
+                    } catch (error) {
+                        toast(error?.message || 'Terjadi kesalahan.', 'error');
+                    } finally {
+                        if (button) button.disabled = false;
+                    }
+                });
+            });
+        })();
+    </script>
 </x-app-layout>
