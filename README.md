@@ -6,88 +6,88 @@ Solusi POS modern, cepat, dan user-friendly khusus untuk bisnis retail dan UMKM 
 
 ---
 
-## ✨ Fitur Utama
+## Fitur Utama
 
-### 🏪 **Point of Sale**
-- ✅ Interface kasir yang intuitif dan responsif
-- ✅ Search produk real-time (nama, SKU, barcode)
-- ✅ Keranjang belanja dengan perhitungan otomatis
-- ✅ Support 5 metode pembayaran (Cash, QRIS, Debit, Transfer, E-Wallet)
-- ✅ Split payment (pembayaran ganda dalam 1 transaksi)
-- ✅ Hold transaksi (simpan sementara & lanjutkan kemudian)
-- ✅ Keyboard shortcut untuk kasir pro (F2, F4, Ctrl+Enter, dll)
-- ✅ Auto-print struk & receipt PDF
-- ✅ Validasi stok real-time
+### **Point of Sale**
+-  Interface kasir yang intuitif dan responsif
+-  Search produk real-time (nama, SKU, barcode)
+-  Keranjang belanja dengan perhitungan otomatis
+-  Support 5 metode pembayaran (Cash, QRIS, Debit, Transfer, E-Wallet)
+-  Split payment (pembayaran ganda dalam 1 transaksi)
+-  Hold transaksi (simpan sementara & lanjutkan kemudian)
+-  Keyboard shortcut untuk kasir pro (F2, F4, Ctrl+Enter, dll)
+-  Auto-print struk & receipt PDF
+-  Validasi stok real-time
 
-### 👥 **Manajemen Pelanggan**
-- ✅ Database pelanggan dengan contact tracking
-- ✅ Riwayat pembelian otomatis tersimpan
-- ✅ Auto-complete customer saat checkout
-- ✅ Customer follow-up management
-- ✅ Tracking customer retention & repeat purchase
+###  **Manajemen Pelanggan**
+-  Database pelanggan dengan contact tracking
+-  Riwayat pembelian otomatis tersimpan
+-  Auto-complete customer saat checkout
+-  Customer follow-up management
+-  Tracking customer retention & repeat purchase
 
 ### 💳 **Customer Debt Tracking**
-- ✅ Manajemen hutang pelanggan (piutang)
-- ✅ Payment plan & cicilan otomatis
-- ✅ Payment term tracking (tanggal jatuh tempo)
-- ✅ Multi-branch debt visibility (hutang global)
-- ✅ Debt collection reminder & alerts
-- ✅ Export hutang per customer
+-  Manajemen hutang pelanggan (piutang)
+-  Payment plan & cicilan otomatis
+-  Payment term tracking (tanggal jatuh tempo)
+-  Multi-branch debt visibility (hutang global)
+-  Debt collection reminder & alerts
+-  Export hutang per customer
 
 ### 🏭 **Supplier Management**
-- ✅ Database supplier lengkap
-- ✅ Purchase order system
-- ✅ Goods receipt & tracking
-- ✅ Supplier invoice management
-- ✅ Payment tracking & payment terms
-- ✅ Supplier performance analytics
+-  Database supplier lengkap
+-  Purchase order system
+-  Goods receipt & tracking
+-  Supplier invoice management
+-  Payment tracking & payment terms
+-  Supplier performance analytics
 
-### 📦 **Inventory Management**
-- ✅ Manajemen produk lengkap (CRUD)
-- ✅ Kategori produk dengan unlimited level
-- ✅ Stock tracking real-time
-- ✅ Low stock alerts & notifications
-- ✅ Stock adjustment & opname
-- ✅ Stock transfer antar branch (multi-branch)
-- ✅ SKU & barcode support
+###  **Inventory Management**
+-  Manajemen produk lengkap (CRUD)
+-  Kategori produk dengan unlimited level
+-  Stock tracking real-time
+-  Low stock alerts & notifications
+-  Stock adjustment & opname
+-  Stock transfer antar branch (multi-branch)
+-  SKU & barcode support
 
-### 📊 **Dashboard & Reporting**
-- ✅ Dashboard owner dengan KPI real-time
-- ✅ Omzet hari ini vs kemarin
-- ✅ Top selling products
-- ✅ Laporan penjualan (harian/mingguan/bulanan/custom)
-- ✅ Laporan biaya & laba
-- ✅ Expense tracking
-- ✅ Export Excel & PDF
-- ✅ Ringkasan shift per kasir
+###  **Dashboard & Reporting**
+-  Dashboard owner dengan KPI real-time
+-  Omzet hari ini vs kemarin
+-  Top selling products
+-  Laporan penjualan (harian/mingguan/bulanan/custom)
+-  Laporan biaya & laba
+-  Expense tracking
+-  Export Excel & PDF
+-  Ringkasan shift per kasir
 
-### 🏢 **Multi-Branch Support**
-- ✅ Support multiple lokasi/cabang
-- ✅ Central reporting dashboard
-- ✅ Centralized customer database
-- ✅ Global debt visibility
-- ✅ Stock transfer antar branch
-- ✅ Per-location analytics
+###  **Multi-Branch Support**
+-  Support multiple lokasi/cabang
+-  Central reporting dashboard
+-  Centralized customer database
+-  Global debt visibility
+-  Stock transfer antar branch
+-  Per-location analytics
 
-### 🔐 **Security & Audit**
-- ✅ Role-based access control (Owner, Admin, Kasir)
-- ✅ Comprehensive audit log
-- ✅ Approval request system
-- ✅ User activity tracking
-- ✅ IP address & device logging
-- ✅ Anti-manipulasi data
+###  **Security & Audit**
+-  Role-based access control (Owner, Admin, Kasir)
+-  Comprehensive audit log
+-  Approval request system
+-  User activity tracking
+-  IP address & device logging
+-  Anti-manipulasi data
 
 ### 🔧 **Admin Panel**
-- ✅ Filament admin panel
-- ✅ Easy CRUD untuk semua data
-- ✅ Pengaturan toko (nama, alamat, logo, WhatsApp)
-- ✅ User management
-- ✅ Permission management
-- ✅ Bulk operations
+-  Filament admin panel
+-  Easy CRUD untuk semua data
+-  Pengaturan toko (nama, alamat, logo, WhatsApp)
+-  User management
+-  Permission management
+-  Bulk operations
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -104,7 +104,7 @@ Solusi POS modern, cepat, dan user-friendly khusus untuk bisnis retail dan UMKM 
 
 ---
 
-## 📋 Requirements
+##  Requirements
 
 - **PHP** >= 8.2
 - **MySQL** >= 8.0 atau **MariaDB** >= 10.3
@@ -114,7 +114,7 @@ Solusi POS modern, cepat, dan user-friendly khusus untuk bisnis retail dan UMKM 
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Clone Repository
 ```bash
@@ -165,7 +165,7 @@ Aplikasi akan berjalan di: **http://127.0.0.1:8000**
 
 ---
 
-## 👤 Demo Credentials
+##  Demo Credentials
 
 Setelah seeding, gunakan akun berikut untuk login:
 
@@ -177,7 +177,7 @@ Setelah seeding, gunakan akun berikut untuk login:
 
 ---
 
-## 📁 Struktur Folder
+##  Struktur Folder
 
 ```
 bintangPOS/
@@ -247,7 +247,7 @@ bintangPOS/
 
 ---
 
-## 🔄 Development Workflow
+##  Development Workflow
 
 ### Menjalankan Development Server dengan Watch Mode
 ```bash
@@ -282,7 +282,7 @@ php artisan ide-helper:generate
 
 ---
 
-## 📱 API Endpoints
+##  API Endpoints
 
 ### Authentication
 - `POST /login` - Login
@@ -325,7 +325,7 @@ php artisan ide-helper:generate
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Kami terbuka untuk kontribusi! Berikut cara berkontribusi:
 
@@ -344,7 +344,7 @@ Kami terbuka untuk kontribusi! Berikut cara berkontribusi:
 
 ---
 
-## 📝 Roadmap
+##  Roadmap
 
 - [ ] Mobile app (React Native/Flutter)
 - [ ] Integrasi payment gateway (Midtrans, Xendit)
@@ -360,7 +360,7 @@ Kami terbuka untuk kontribusi! Berikut cara berkontribusi:
 
 ---
 
-## 🐛 Issues & Bug Report
+##  Issues & Bug Report
 
 Menemukan bug? Silakan buat [Issue](https://github.com/aksatria/bintangPOS/issues) baru dengan:
 - Deskripsi masalah yang jelas
@@ -370,7 +370,7 @@ Menemukan bug? Silakan buat [Issue](https://github.com/aksatria/bintangPOS/issue
 
 ---
 
-## 📚 Documentation
+##  Documentation
 
 Dokumentasi lengkap tersedia di folder `./docs/`:
 - [Installation Guide](./docs/INSTALLATION.md)
@@ -381,19 +381,19 @@ Dokumentasi lengkap tersedia di folder `./docs/`:
 
 ---
 
-## 📄 License
+##  License
 
 Proyek ini dilisensikan di bawah [MIT License](LICENSE) - lihat file [LICENSE](LICENSE) untuk detail lengkap.
 
 ---
 
-## 👨‍💻 Author
+##  Author
 
 **Aksatria** - [@aksatria](https://github.com/aksatria)
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - Laravel community untuk framework yang awesome
 - Filament team untuk admin panel yang powerful
