@@ -1,0 +1,2 @@
+# bintangPOS
+UMKM lebih hidup
