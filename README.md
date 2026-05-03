@@ -1,4 +1,4 @@
-# 🌟 BINTANG POS - Sistem Point of Sale Untuk UMKM Indonesia
+# BINTANG POS - Sistem Point of Sale Untuk UMKM Indonesia
 
 Solusi POS modern, cepat, dan user-friendly khusus untuk bisnis retail dan UMKM Indonesia. Dibangun dengan Laravel 12, mendukung multi-branch, dan dilengkapi dengan sistem manajemen lengkap (inventory, customer, supplier, laporan).
 
