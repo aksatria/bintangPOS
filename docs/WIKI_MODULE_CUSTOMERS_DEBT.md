@@ -5,6 +5,7 @@
 - Kelola data pelanggan.
 - Pantau hutang/piutang pelanggan.
 - Catat pembayaran cicilan/piutang.
+- Lihat histori pembayaran dan status aging.
 
 ## Alur Ringkas
 
@@ -17,3 +18,13 @@
 
 - Active / Overdue / Settled.
 
+## Kontrol Penting
+
+- Nominal pembayaran tidak boleh melebihi sisa.
+- Catat tanggal bayar aktual untuk akurasi aging.
+- Gunakan catatan pembayaran jika ada kasus khusus.
+
+## Risiko Umum
+
+- Salah mapping customer pada transaksi.
+- Pembayaran masuk tapi tidak dicatat ke debt record.

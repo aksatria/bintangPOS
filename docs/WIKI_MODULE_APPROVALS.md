@@ -5,6 +5,7 @@
 - Pusat persetujuan lintas modul.
 - Approve/reject dengan catatan.
 - Monitoring SLA approval.
+- Riwayat requester, reviewer, waktu proses.
 
 ## Alur Ringkas
 
@@ -17,4 +18,9 @@
 
 - Wajib isi alasan saat reject.
 - Review nominal/dampak sebelum approve.
+- Proses request tertua/terkritis dulu (berdasarkan SLA).
 
+## Dampak Bisnis
+
+- Menurunkan risiko transaksi tidak terkontrol.
+- Membuat keputusan bisa diaudit.

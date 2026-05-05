@@ -5,6 +5,7 @@
 - Stock opname berkala.
 - Koreksi selisih stok.
 - Transfer stok antar cabang.
+- Jejak audit perubahan stok.
 
 ## Alur Ringkas
 
@@ -18,4 +19,9 @@
 
 - Gunakan user berizin.
 - Simpan jejak audit selisih.
+- Validasi qty negatif dan satuan produk.
 
+## Risiko Umum
+
+- Opname dilakukan saat transaksi berjalan tanpa cut-off.
+- Transfer belum diterima tapi stok tujuan dianggap masuk.

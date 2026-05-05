@@ -27,3 +27,9 @@
 - Pastikan event transaksi sudah final (receive/pay/checkout).
 - Cek filter tanggal laporan/jurnal.
 
+## 6. Langkah Eskalasi Minimal
+
+1. Catat URL, waktu, dan user yang mengalami masalah.
+2. Catat pesan error persis.
+3. Lampirkan cuplikan log relevan.
+4. Eskalasi ke PIC teknis dengan data lengkap.

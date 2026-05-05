@@ -6,6 +6,7 @@
 - Split payment.
 - Hold/resume transaksi.
 - Rekam histori transaksi penjualan.
+- Dukungan kontrol diskon/promo sesuai kebijakan.
 
 ## Alur Ringkas
 
@@ -21,3 +22,22 @@
 - Nominal bayar harus sesuai.
 - Void/refund mengikuti policy approval (jika aktif).
 
+## Data yang Terdampak
+
+- Penjualan header/detail.
+- Stok produk.
+- Metode pembayaran dan jejak kasir.
+- Jurnal akuntansi otomatis (saat transaksi final).
+
+## KPI yang Dipantau
+
+- Omzet harian.
+- Jumlah transaksi.
+- Rata-rata nilai transaksi.
+- Proporsi metode pembayaran.
+
+## Risiko Umum
+
+- Salah cabang aktif.
+- Salah nominal saat split payment.
+- Transaksi hold tidak ditutup ulang.
