@@ -10,7 +10,7 @@ Target: tim bisa operasional Supplier + Approval + Akuntansi dasar dalam 1 hari 
 4. Validasi transaksi masuk riwayat.
 
 Output:
-- Screenshot step kasir lengkap.
+- Checklist step kasir lengkap.
 
 ## Sesi 2 - Admin Supplier (120 menit)
 
@@ -48,7 +48,6 @@ Output:
 ## Closing Checklist Trainer
 
 1. Semua role menyelesaikan SOP masing-masing.
-2. Screenshot bukti lengkap.
+2. Checklist training terisi lengkap.
 3. Tidak ada error blocking.
 4. Tim paham status utama: approval, barang, bayar.
-
