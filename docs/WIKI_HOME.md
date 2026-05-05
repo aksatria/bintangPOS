@@ -23,6 +23,9 @@ Rangkaian training 1 hari untuk implementasi tim.
 4. [FAQ Operasional](./WIKI_FAQ.md)  
 Jawaban singkat untuk pertanyaan umum dan kendala lapangan.
 
+5. [Index Sistem Lengkap](./WIKI_SYSTEM_FULL_INDEX.md)  
+Navigasi seluruh modul sistem (operasional, kontrol, keuangan, dan runbook).
+
 ## Dokumen Governance
 
 1. [Final Acceptance Supplier & Akuntansi](./FINAL_ACCEPTANCE_SUPPLIER_ACCOUNTING.md)
