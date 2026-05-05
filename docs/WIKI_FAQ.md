@@ -70,3 +70,8 @@
 
 - Test hijau artinya kode stabil, tetapi readiness 100% juga butuh operasi sehat (scheduler, backup, overdue approvals) dan UAT signoff real data.
 - Jalankan `ops:health-check` dan `ops:production-sanity-check --strict` untuk melihat status operasional.
+
+## 15) Checklist final fitur ada di mana?
+
+- Gunakan dokumen `docs/UAT_CEPAT_FITUR_FINAL_2026-05-06.md`.
+- Dokumen ini berisi langkah uji cepat untuk OTP login, supplier 3-way matching, reorder suggestion, report MoM, dan approval auto-routing.
