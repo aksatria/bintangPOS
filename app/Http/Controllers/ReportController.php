@@ -10,6 +10,8 @@ use App\Models\Expense;
 use App\Models\ApprovalRequest;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\StoreSetting;
+use App\Models\User;
 use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use App\Support\TelegramNotifier;
@@ -95,6 +97,55 @@ class ReportController extends Controller
 
         $profit = $omzet - $modal - $expenses;
 
+        $monthStart = now()->startOfMonth();
+        $prevMonthStart = now()->subMonthNoOverflow()->startOfMonth();
+        $prevMonthEnd = now()->subMonthNoOverflow()->endOfMonth();
+        $currentMonthOmzet = (float) $this->applyBranchScope(Sale::query(), $request->user())
+            ->where('status', SaleStatus::Paid->value)
+            ->whereBetween('sold_at', [$monthStart, now()->endOfDay()])
+            ->sum('total_amount');
+        $prevMonthOmzet = (float) $this->applyBranchScope(Sale::query(), $request->user())
+            ->where('status', SaleStatus::Paid->value)
+            ->whereBetween('sold_at', [$prevMonthStart, $prevMonthEnd])
+            ->sum('total_amount');
+        $monthExpenses = (float) $this->applyBranchScope(Expense::query(), $request->user())
+            ->whereBetween('date', [$monthStart->toDateString(), now()->toDateString()])
+            ->sum('amount');
+        $prevMonthExpenses = (float) $this->applyBranchScope(Expense::query(), $request->user())
+            ->whereBetween('date', [$prevMonthStart->toDateString(), $prevMonthEnd->toDateString()])
+            ->sum('amount');
+        $currentMonthProfit = $currentMonthOmzet - $monthExpenses;
+        $prevMonthProfit = $prevMonthOmzet - $prevMonthExpenses;
+
+        $mom = [
+            'omzet_current' => $currentMonthOmzet,
+            'omzet_previous' => $prevMonthOmzet,
+            'omzet_pct' => $prevMonthOmzet > 0 ? (($currentMonthOmzet - $prevMonthOmzet) / $prevMonthOmzet) * 100 : null,
+            'profit_current' => $currentMonthProfit,
+            'profit_previous' => $prevMonthProfit,
+            'profit_pct' => $prevMonthProfit > 0 ? (($currentMonthProfit - $prevMonthProfit) / $prevMonthProfit) * 100 : null,
+        ];
+
+        $trendMonths = collect(range(5, 0))->map(fn ($offset) => now()->subMonths($offset)->startOfMonth())
+            ->push(now()->startOfMonth())
+            ->values();
+        $trendData = $trendMonths->map(function (Carbon $month) use ($request) {
+            $start = $month->copy()->startOfMonth();
+            $end = $month->copy()->endOfMonth();
+            $monthOmzet = (float) $this->applyBranchScope(Sale::query(), $request->user())
+                ->where('status', SaleStatus::Paid->value)
+                ->whereBetween('sold_at', [$start, $end])
+                ->sum('total_amount');
+            $monthExpense = (float) $this->applyBranchScope(Expense::query(), $request->user())
+                ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+                ->sum('amount');
+            return [
+                'label' => $month->translatedFormat('M Y'),
+                'omzet' => $monthOmzet,
+                'profit' => $monthOmzet - $monthExpense,
+            ];
+        })->values();
+
         $paymentSummary = $paidSales
             ->groupBy(fn ($sale) => (string) ($sale->payment_method ?: 'cash'))
             ->map(function ($rows, $method) use ($omzet) {
@@ -148,6 +199,8 @@ class ReportController extends Controller
             'profit' => $profit,
             'paymentSummary' => $paymentSummary,
             'cashierPaymentStats' => $cashierPaymentStats,
+            'mom' => $mom,
+            'trendData' => $trendData,
             'compact' => $compact,
         ]);
     }
@@ -411,6 +464,7 @@ class ReportController extends Controller
                 'type' => "report.export.$format",
                 'status' => 'pending',
                 'requested_by' => (int) ($request->user()?->id ?? 0),
+                'assigned_to' => $this->resolveReportApprovalAssignee((float) $selectedTotal, ActiveBranchContext::resolveBranchId($request->user())),
                 'title' => 'Approval Export '.strtoupper($format).' Besar',
                 'reason' => $reason,
                 'payload' => [
@@ -458,6 +512,27 @@ class ReportController extends Controller
         }
 
         return redirect()->route('reports.index', $request->query())->with('error', 'Export besar masuk antrian approval. Lanjutkan setelah disetujui di Approval Queue.');
+    }
+
+    private function resolveReportApprovalAssignee(float $amount, ?int $branchId): ?int
+    {
+        $setting = StoreSetting::query()->first();
+        $rules = is_array($setting?->approval_rules) ? $setting->approval_rules : [];
+        $threshold = (float) data_get($rules, 'approval_routing.report_export_threshold', 100000000);
+        $targetRole = $amount >= $threshold ? 'owner' : 'admin';
+
+        $query = User::query()->where('role', $targetRole);
+        if ($branchId) {
+            $query->where(function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            });
+        }
+        $assignee = $query->orderBy('id')->first();
+        if (! $assignee && $targetRole !== 'owner') {
+            $assignee = User::query()->where('role', 'owner')->orderBy('id')->first();
+        }
+
+        return $assignee?->id ? (int) $assignee->id : null;
     }
 
     private function enforceExportRateLimit(Request $request): void

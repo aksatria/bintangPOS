@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\StoreSetting;
+use App\Enums\SaleStatus;
 use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use Illuminate\Http\Request;
@@ -61,9 +65,64 @@ class ProductManagementController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $setting = StoreSetting::query()->first();
+        $rules = is_array($setting?->approval_rules) ? $setting->approval_rules : [];
+        $lookbackDays = max(7, (int) data_get($rules, 'reorder_lookback_days', 30));
+        $leadDays = max(1, (int) data_get($rules, 'reorder_lead_days', 7));
+        $safetyDays = max(0, (int) data_get($rules, 'reorder_safety_days', 3));
+
+        $start = now()->subDays($lookbackDays)->startOfDay();
+        $end = now()->endOfDay();
+
+        $salesIds = $this->applyBranchScope(Sale::query(), $request->user())
+            ->where('status', SaleStatus::Paid->value)
+            ->whereBetween('sold_at', [$start, $end])
+            ->pluck('id');
+
+        $dailySoldByProduct = collect();
+        if ($salesIds->isNotEmpty()) {
+            $dailySoldByProduct = SaleItem::query()
+                ->whereIn('sale_id', $salesIds->all())
+                ->selectRaw('product_id, COALESCE(SUM(quantity),0) as qty')
+                ->whereNotNull('product_id')
+                ->groupBy('product_id')
+                ->pluck('qty', 'product_id');
+        }
+
+        $reorderSuggestions = $this->applyBranchScope(Product::query(), $request->user())
+            ->where('is_active', true)
+            ->get(['id', 'name', 'sku', 'stock', 'low_stock_threshold'])
+            ->map(function (Product $product) use ($dailySoldByProduct, $lookbackDays, $leadDays, $safetyDays) {
+                $sold = (float) ($dailySoldByProduct[(int) $product->id] ?? 0);
+                $dailyAvg = $lookbackDays > 0 ? ($sold / $lookbackDays) : 0;
+                $demandWindow = $leadDays + $safetyDays;
+                $targetStock = (int) ceil(max((int) $product->low_stock_threshold, $dailyAvg * $demandWindow));
+                $suggestedQty = max($targetStock - (int) $product->stock, 0);
+
+                return [
+                    'id' => (int) $product->id,
+                    'name' => (string) $product->name,
+                    'sku' => (string) $product->sku,
+                    'stock' => (int) $product->stock,
+                    'target_stock' => $targetStock,
+                    'daily_avg' => round($dailyAvg, 2),
+                    'suggested_qty' => $suggestedQty,
+                ];
+            })
+            ->filter(fn ($row) => (int) $row['suggested_qty'] > 0)
+            ->sortByDesc('suggested_qty')
+            ->take(12)
+            ->values();
+
         return view('admin.products', [
             'products' => $products,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            'reorderSuggestions' => $reorderSuggestions,
+            'reorderWindow' => [
+                'lookback_days' => $lookbackDays,
+                'lead_days' => $leadDays,
+                'safety_days' => $safetyDays,
+            ],
             'filters' => [
                 'q' => $q,
                 'category_id' => $categoryId,

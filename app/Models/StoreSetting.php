@@ -51,6 +51,16 @@ class StoreSetting extends Model
             'receive_sla_minutes' => 180,
             'discrepancy_warning_pct' => 5,
         ],
+        'supplier_three_way_tolerance_pct' => 2,
+        'supplier_three_way_enforced' => false,
+        'reorder_lookback_days' => 30,
+        'reorder_lead_days' => 7,
+        'reorder_safety_days' => 3,
+        'approval_routing' => [
+            'supplier_purchase_threshold' => 10000000,
+            'supplier_payment_threshold' => 5000000,
+            'report_export_threshold' => 100000000,
+        ],
     ];
 
     protected $fillable = [
@@ -201,6 +211,16 @@ class StoreSetting extends Model
                 'approve_sla_minutes' => max(5, (int) data_get($approvalRules, 'stock_transfer_kpi.approve_sla_minutes', 60)),
                 'receive_sla_minutes' => max(5, (int) data_get($approvalRules, 'stock_transfer_kpi.receive_sla_minutes', 180)),
                 'discrepancy_warning_pct' => max(0, min(100, (float) data_get($approvalRules, 'stock_transfer_kpi.discrepancy_warning_pct', 5))),
+            ],
+            'supplier_three_way_tolerance_pct' => max(0, min(20, (float) data_get($approvalRules, 'supplier_three_way_tolerance_pct', 2))),
+            'supplier_three_way_enforced' => (bool) data_get($approvalRules, 'supplier_three_way_enforced', false),
+            'reorder_lookback_days' => max(7, min(180, (int) data_get($approvalRules, 'reorder_lookback_days', 30))),
+            'reorder_lead_days' => max(1, min(90, (int) data_get($approvalRules, 'reorder_lead_days', 7))),
+            'reorder_safety_days' => max(0, min(90, (int) data_get($approvalRules, 'reorder_safety_days', 3))),
+            'approval_routing' => [
+                'supplier_purchase_threshold' => max(1, (float) data_get($approvalRules, 'approval_routing.supplier_purchase_threshold', 10000000)),
+                'supplier_payment_threshold' => max(1, (float) data_get($approvalRules, 'approval_routing.supplier_payment_threshold', 5000000)),
+                'report_export_threshold' => max(1, (float) data_get($approvalRules, 'approval_routing.report_export_threshold', 100000000)),
             ],
         ];
 

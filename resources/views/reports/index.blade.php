@@ -167,6 +167,44 @@
             </div>
         </div>
 
+        <div class="panel-card">
+            <div class="panel-head report-panel-head">
+                <h3 class="report-section-title">Tren Omzet/Laba & MoM</h3>
+            </div>
+            <div class="panel-body" style="display:grid;gap:.85rem;">
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                    <div>
+                        <div class="text-slate-500 text-xs uppercase">MoM Omzet</div>
+                        <strong>{{ is_null(data_get($mom ?? [], 'omzet_pct')) ? '-' : number_format((float) data_get($mom, 'omzet_pct', 0), 2, ',', '.').'%' }}</strong>
+                    </div>
+                    <div>
+                        <div class="text-slate-500 text-xs uppercase">MoM Laba</div>
+                        <strong>{{ is_null(data_get($mom ?? [], 'profit_pct')) ? '-' : number_format((float) data_get($mom, 'profit_pct', 0), 2, ',', '.').'%' }}</strong>
+                    </div>
+                </div>
+                <div class="overflow-auto">
+                    <table class="table-ui report-table">
+                        <thead>
+                            <tr>
+                                <th>Bulan</th>
+                                <th class="text-left">Omzet</th>
+                                <th class="text-left">Laba</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(($trendData ?? collect()) as $row)
+                                <tr>
+                                    <td>{{ $row['label'] }}</td>
+                                    <td class="text-left">Rp {{ number_format((float) $row['omzet'], 0, ',', '.') }}</td>
+                                    <td class="text-left">Rp {{ number_format((float) $row['profit'], 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div class="panel-card overflow-hidden">
             <div class="panel-head report-panel-head">
                 <h3 class="report-section-title">Komposisi Metode Pembayaran (Transaksi Paid)</h3>

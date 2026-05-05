@@ -11,6 +11,8 @@ use App\Models\SupplierPurchaseAttachment;
 use App\Models\SupplierPurchaseItem;
 use App\Models\SupplierPurchasePayment;
 use App\Models\SupplierPurchaseReturn;
+use App\Models\StoreSetting;
+use App\Models\User;
 use App\Support\ActiveBranchContext;
 use App\Support\AppliesBranchScope;
 use App\Services\AccountingService;
@@ -643,6 +645,7 @@ class SupplierManagementController extends Controller
             'type' => 'supplier.purchase_approval',
             'status' => 'pending',
             'requested_by' => (int) $request->user()->id,
+            'assigned_to' => $this->resolveApprovalAssignee($purchase->branch_id, (float) $purchase->total_amount, 'supplier_purchase'),
             'title' => "Persetujuan Pembelian {$purchase->number}",
             'reason' => 'Persetujuan pembelian dari supplier sebelum barang diterima.',
             'payload' => [
@@ -1406,6 +1409,12 @@ class SupplierManagementController extends Controller
         if ((float) $validated['amount'] > (float) $purchase->remaining_amount) {
             return back()->withErrors(['amount' => 'Nominal bayar tidak boleh lebih besar dari sisa hutang.']);
         }
+        if ($this->isThreeWayEnforced()) {
+            [$isThreeWayMatched, $threeWayNote] = $this->evaluateThreeWayMatch($purchase);
+            if (! $isThreeWayMatched) {
+                return back()->withErrors(['purchase' => 'Pembayaran diblokir: 3-way matching belum valid. '.$threeWayNote]);
+            }
+        }
 
         if ($this->requiresOwnerApprovalForSupplierPayment($request, $purchase, (float) $validated['amount'])) {
             $this->createSupplierPaymentApproval(
@@ -1906,8 +1915,59 @@ class SupplierManagementController extends Controller
         if ($request->user()?->hasAnyRole(['owner'])) {
             return false;
         }
+        $setting = StoreSetting::query()->first();
+        $rules = is_array($setting?->approval_rules) ? $setting->approval_rules : [];
+        $rawThreshold = data_get($rules, 'approval_routing.supplier_payment_threshold');
+        if ($rawThreshold === null || $rawThreshold === '') {
+            return false;
+        }
+        $threshold = (float) $rawThreshold;
+        if ($threshold <= 0) {
+            return false;
+        }
 
-        return false;
+        return $amount >= $threshold;
+    }
+
+    private function evaluateThreeWayMatch(SupplierPurchase $purchase): array
+    {
+        $purchase->loadMissing('items');
+        $invoice = (float) ($purchase->supplier_invoice_amount ?? 0);
+        if ($invoice <= 0) {
+            return [false, 'Nominal invoice supplier belum diisi.'];
+        }
+
+        $receivedTotal = (float) $purchase->items->sum(function (SupplierPurchaseItem $item) {
+            $receivedQty = max((int) ($item->received_quantity ?? 0), 0);
+            $returnedQty = max((int) ($item->returned_quantity ?? 0), 0);
+            return max($receivedQty - $returnedQty, 0) * (float) $item->unit_cost;
+        });
+        if ($receivedTotal <= 0) {
+            return [false, 'Belum ada kuantitas received pada item.'];
+        }
+
+        $setting = StoreSetting::query()->first();
+        $rules = is_array($setting?->approval_rules) ? $setting->approval_rules : [];
+        $tolerancePct = max(0, min(20, (float) data_get($rules, 'supplier_three_way_tolerance_pct', 2)));
+        $status = (string) ($purchase->reconciliation_status ?? 'unchecked');
+        if (! in_array($status, ['matched', 'unchecked'], true)) {
+            return [false, 'Status rekonsiliasi saat ini '.$status.'.'];
+        }
+
+        $base = max($invoice, $receivedTotal, (float) $purchase->total_amount, 1);
+        $diffPct = (abs($invoice - $receivedTotal) / $base) * 100;
+        if ($diffPct > $tolerancePct) {
+            return [false, 'Selisih invoice vs receive '.number_format($diffPct, 2).'%, melebihi toleransi '.number_format($tolerancePct, 2).'%.'];
+        }
+
+        return [true, '3-way matching valid.'];
+    }
+
+    private function isThreeWayEnforced(): bool
+    {
+        $setting = StoreSetting::query()->first();
+        $rules = is_array($setting?->approval_rules) ? $setting->approval_rules : [];
+        return (bool) data_get($rules, 'supplier_three_way_enforced', false);
     }
 
     private function supplierPurchaseApproved(SupplierPurchase $purchase): bool
@@ -2039,6 +2099,7 @@ class SupplierManagementController extends Controller
             'type' => 'supplier.purchase_payment',
             'status' => 'pending',
             'requested_by' => (int) $request->user()->id,
+            'assigned_to' => $this->resolveApprovalAssignee($purchase->branch_id, $amount, 'supplier_payment'),
             'title' => "Approval Pembayaran {$purchase->number}",
             'reason' => $reason,
             'payload' => [
@@ -2092,6 +2153,32 @@ class SupplierManagementController extends Controller
         ]);
 
         return [$newRemaining, $payment];
+    }
+
+    private function resolveApprovalAssignee(?int $branchId, float $amount, string $type): ?int
+    {
+        $setting = StoreSetting::query()->first();
+        $rules = is_array($setting?->approval_rules) ? $setting->approval_rules : [];
+        $routing = (array) data_get($rules, 'approval_routing', []);
+        $threshold = match ($type) {
+            'supplier_purchase' => (float) ($routing['supplier_purchase_threshold'] ?? 10000000),
+            'supplier_payment' => (float) ($routing['supplier_payment_threshold'] ?? 5000000),
+            default => 100000000,
+        };
+        $targetRole = $amount >= $threshold ? 'owner' : 'admin';
+
+        $query = User::query()->where('role', $targetRole);
+        if ($branchId) {
+            $query->where(function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            });
+        }
+        $assignee = $query->orderBy('id')->first();
+        if (! $assignee && $targetRole !== 'owner') {
+            $assignee = User::query()->where('role', 'owner')->orderBy('id')->first();
+        }
+
+        return $assignee?->id ? (int) $assignee->id : null;
     }
 
     private function generateSupplierCode(?int $branchId): string

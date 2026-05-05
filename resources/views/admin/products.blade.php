@@ -597,6 +597,31 @@
             </div>
         @endif
 
+        @if(!empty($reorderSuggestions) && count($reorderSuggestions) > 0)
+            <section class="px-card">
+                <div class="px-card-head">
+                    <h3 class="px-card-title">Reorder Suggestion Otomatis</h3>
+                    <p class="px-filter-note">Lookback {{ (int) data_get($reorderWindow ?? [], 'lookback_days', 30) }} hari · Lead {{ (int) data_get($reorderWindow ?? [], 'lead_days', 7) }} hari · Safety {{ (int) data_get($reorderWindow ?? [], 'safety_days', 3) }} hari</p>
+                </div>
+                <div class="px-card-body">
+                    <div style="display:grid;gap:.55rem;">
+                        @foreach($reorderSuggestions as $row)
+                            <div style="display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;border:1px solid #e2e8f0;border-radius:10px;padding:.6rem .75rem;">
+                                <div>
+                                    <strong>{{ $row['name'] }}</strong>
+                                    <div style="font-size:.82rem;color:#64748b;">{{ $row['sku'] }} · Avg {{ number_format((float) $row['daily_avg'], 2, ',', '.') }}/hari</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:.82rem;color:#475569;">Stok {{ (int) $row['stock'] }} / Target {{ (int) $row['target_stock'] }}</div>
+                                    <strong style="color:#b45309;">Saran order: {{ number_format((int) $row['suggested_qty'], 0, ',', '.') }}</strong>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+        @endif
+
         <div class="px-layout">
             <section class="px-card">
                 <div class="px-card-head"><h3 class="px-card-title">Daftar Produk</h3></div>
@@ -1155,6 +1180,5 @@
         }
     </script>
 </x-app-layout>
-
 
 
