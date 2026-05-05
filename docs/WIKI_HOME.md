@@ -1,28 +1,37 @@
-# BINTANG POS Wiki (Ready-to-Copy)
+# BINTANG POS Wiki
 
-Halaman ini adalah index untuk konten wiki internal proyek.
+Selamat datang di dokumentasi operasional BINTANG POS.  
+Wiki ini disusun agar tim bisa cepat memahami alur kerja, menjalankan proses harian dengan konsisten, dan menjaga kualitas data dari operasional sampai akuntansi.
 
-## Navigasi Cepat
+## Tujuan Wiki
 
-1. [Overview Aplikasi](./APLIKASI_OVERVIEW_SUPPLIER_ACCOUNTING.md)
-2. [SOP Training Tim (Kasir/Admin/Owner)](./SOP_TRAINING_KASIR_ADMIN_OWNER.md)
-3. [Final Acceptance Supplier & Akuntansi](./FINAL_ACCEPTANCE_SUPPLIER_ACCOUNTING.md)
-4. [Changelog Final 6 Mei 2026](./CHANGELOG_2026-05-06_FINAL.md)
-5. [FAQ Operasional](./WIKI_FAQ.md)
+1. Menjadi referensi tunggal untuk proses kerja tim.
+2. Mempercepat onboarding pengguna baru (Kasir, Admin, Owner).
+3. Menyediakan panduan troubleshooting dasar yang praktis.
 
-## Struktur Wiki yang Disarankan di GitHub
+## Mulai dari Sini
 
-- `Home` -> gunakan isi file `WIKI_HOME.md`
-- `Overview` -> gunakan `APLIKASI_OVERVIEW_SUPPLIER_ACCOUNTING.md`
-- `SOP Training` -> gunakan `SOP_TRAINING_KASIR_ADMIN_OWNER.md`
-- `Final Acceptance` -> gunakan `FINAL_ACCEPTANCE_SUPPLIER_ACCOUNTING.md`
-- `FAQ` -> gunakan `WIKI_FAQ.md`
+1. [Overview Aplikasi](./APLIKASI_OVERVIEW_SUPPLIER_ACCOUNTING.md)  
+Peta fitur, flow bisnis, dan cara kerja akuntansi inti.
 
-## Cara Publish ke GitHub Wiki
+2. [SOP Training Tim](./SOP_TRAINING_KASIR_ADMIN_OWNER.md)  
+Panduan langkah kerja per peran: Kasir, Admin, Owner.
 
-1. Buka repository: `https://github.com/aksatria/bintangPOS`
-2. Buka tab `Wiki`.
-3. Buat page `Home`, lalu paste isi dari `WIKI_HOME.md`.
-4. Buat page lain sesuai struktur di atas dan paste isi dokumen terkait.
-5. Simpan tiap halaman.
+3. [Training Flow Cepat](./WIKI_TRAINING_FLOW.md)  
+Rangkaian training 1 hari untuk implementasi tim.
 
+4. [FAQ Operasional](./WIKI_FAQ.md)  
+Jawaban singkat untuk pertanyaan umum dan kendala lapangan.
+
+## Dokumen Governance
+
+1. [Final Acceptance Supplier & Akuntansi](./FINAL_ACCEPTANCE_SUPPLIER_ACCOUNTING.md)
+2. [Changelog Final 6 Mei 2026](./CHANGELOG_2026-05-06_FINAL.md)
+
+## Prinsip Penggunaan
+
+- Gunakan SOP sebagai sumber langkah baku.
+- Ikuti role dan permission saat menjalankan proses.
+- Catat kendala operasional untuk perbaikan berkelanjutan.
+
+Terima kasih sudah menjaga proses tetap rapi, akurat, dan dapat diaudit.
