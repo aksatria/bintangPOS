@@ -51,3 +51,22 @@
 2. Jalankan `php artisan view:cache`.
 3. Buka ulang halaman dan cek log bila masih gagal.
 
+## 11) Kenapa pembayaran supplier diblokir dengan pesan 3-way matching?
+
+- Jika mode enforcement aktif, pembayaran supplier hanya boleh lanjut jika nilai PO/receive/invoice dalam toleransi.
+- Cek `supplier_invoice_amount`, `received_quantity`, dan status rekonsiliasi.
+
+## 12) Reorder suggestion dihitung dari apa?
+
+- Sistem menghitung dari `low_stock_threshold` + rata-rata penjualan harian.
+- Periode lookback, lead time, dan safety stock mengikuti rule di halaman Store Settings.
+
+## 13) MoM di laporan artinya apa?
+
+- MoM (Month-over-Month) membandingkan performa bulan berjalan vs bulan sebelumnya.
+- Nilai positif berarti naik, negatif berarti turun.
+
+## 14) Kenapa status readiness belum 100% padahal test sudah hijau?
+
+- Test hijau artinya kode stabil, tetapi readiness 100% juga butuh operasi sehat (scheduler, backup, overdue approvals) dan UAT signoff real data.
+- Jalankan `ops:health-check` dan `ops:production-sanity-check --strict` untuk melihat status operasional.
