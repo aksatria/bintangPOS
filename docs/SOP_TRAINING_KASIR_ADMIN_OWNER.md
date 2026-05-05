@@ -165,3 +165,44 @@ Screenshot: `OWNER_STEP_07.png`
 - Kendala:
 - Tindak lanjut:
 
+---
+
+## G. Mapping URL Screenshot (Siap Eksekusi)
+
+Gunakan daftar ini agar tim tidak bingung harus screenshot halaman mana.
+
+### Kasir
+
+1. `KASIR_STEP_01.png` -> `http://127.0.0.1:8000/pos` (halaman POS + cabang aktif)
+2. `KASIR_STEP_02.png` -> `http://127.0.0.1:8000/pos` (produk masuk keranjang)
+3. `KASIR_STEP_03.png` -> `http://127.0.0.1:8000/pos` (diskon/promo diterapkan)
+4. `KASIR_STEP_04.png` -> `http://127.0.0.1:8000/pos` (metode pembayaran)
+5. `KASIR_STEP_05.png` -> `http://127.0.0.1:8000/pos` (transaksi selesai/struk)
+6. `KASIR_STEP_06.png` -> `http://127.0.0.1:8000/sales` atau halaman riwayat transaksi (bukti transaksi tersimpan)
+
+### Admin
+
+1. `ADMIN_STEP_01.png` -> `http://127.0.0.1:8000/admin/suppliers` (landing supplier)
+2. `ADMIN_STEP_02.png` -> `http://127.0.0.1:8000/admin/suppliers` (form tambah supplier)
+3. `ADMIN_STEP_03.png` -> `http://127.0.0.1:8000/admin/suppliers` (buat draft pembelian)
+4. `ADMIN_STEP_04.png` -> `http://127.0.0.1:8000/admin/supplier-purchases/{id}` (edit draft)
+5. `ADMIN_STEP_05.png` -> `http://127.0.0.1:8000/admin/supplier-purchases/{id}` (ajukan approval)
+6. `ADMIN_STEP_06.png` -> `http://127.0.0.1:8000/admin/supplier-purchases/{id}` (terima barang)
+7. `ADMIN_STEP_07.png` -> `http://127.0.0.1:8000/admin/supplier-purchases/{id}` (retur pembelian)
+8. `ADMIN_STEP_08.png` -> `http://127.0.0.1:8000/admin/supplier-purchases/{id}` (pembayaran hutang)
+9. `ADMIN_STEP_09.png` -> `http://127.0.0.1:8000/admin/suppliers` (status hutang di daftar)
+10. `ADMIN_STEP_10.png` -> `http://127.0.0.1:8000/admin/supplier-purchases/{id}` (riwayat approval/pembayaran/lampiran)
+
+### Owner
+
+1. `OWNER_STEP_01.png` -> `http://127.0.0.1:8000/admin/approvals` (daftar approval)
+2. `OWNER_STEP_02.png` -> `http://127.0.0.1:8000/admin/approvals` (detail request)
+3. `OWNER_STEP_03.png` -> `http://127.0.0.1:8000/admin/approvals` (aksi approve/reject + catatan)
+4. `OWNER_STEP_04.png` -> `http://127.0.0.1:8000/admin/approvals` (status berubah)
+5. `OWNER_STEP_05.png` -> `http://127.0.0.1:8000/admin/accounting/reports` (ringkasan laporan)
+6. `OWNER_STEP_06.png` -> `http://127.0.0.1:8000/admin/accounting/journals` (jurnal umum)
+7. `OWNER_STEP_07.png` -> `http://127.0.0.1:8000/admin/accounting/ledger` (buku besar)
+
+Catatan:
+- Ganti `{id}` dengan ID dokumen pembelian supplier hasil training.
+- Disarankan screenshot dalam urutan langkah agar mudah audit.
