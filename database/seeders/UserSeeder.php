@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
         )->id;
 
         $baseUsers = [
-            ['name' => 'Bintang Pratama', 'email' => 'owner@bintang.test', 'role' => UserRole::Owner->value],
+            ['name' => 'Bintang Raya', 'email' => 'owner@bintang.test', 'role' => UserRole::Owner->value],
             ['name' => 'Raka Wijaya', 'email' => 'admin@bintang.test', 'role' => UserRole::Admin->value],
             ['name' => 'Nadia Putri', 'email' => 'kasir@bintang.test', 'role' => UserRole::Cashier->value],
         ];

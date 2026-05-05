@@ -418,6 +418,77 @@
                                     </div>
                                 @endif
                                 <div class="mt-2 text-xs text-slate-500">{{ $row->created_at?->format('d/m/Y H:i') }}</div>
+                                @php($supplierApprovalDetail = (array) data_get($supplierPurchaseApprovalDetails ?? [], (int) $row->id, []))
+                                @if((string) $row->type === 'supplier.purchase_approval' && $supplierApprovalDetail !== [])
+                                    <div class="supplier-approval-preview">
+                                        <div class="supplier-approval-preview__head">
+                                            <div>
+                                                <div class="supplier-approval-preview__label">Ringkasan pembelian supplier</div>
+                                                <div class="supplier-approval-preview__title">{{ $supplierApprovalDetail['number'] ?? '-' }}</div>
+                                                <div class="supplier-approval-preview__sub">{{ $supplierApprovalDetail['supplier_name'] ?? '-' }}</div>
+                                            </div>
+                                            <div class="supplier-approval-preview__money">
+                                                <span>Total</span>
+                                                <strong>Rp {{ number_format((float) ($supplierApprovalDetail['total_amount'] ?? 0), 0, ',', '.') }}</strong>
+                                                <span>Sisa</span>
+                                                <strong class="text-rose-700">Rp {{ number_format((float) ($supplierApprovalDetail['remaining_amount'] ?? 0), 0, ',', '.') }}</strong>
+                                            </div>
+                                        </div>
+                                        <div class="supplier-approval-preview__grid">
+                                            <div><span>Order</span><strong>{{ $supplierApprovalDetail['ordered_at'] ?? '-' }}</strong></div>
+                                            <div><span>Due</span><strong>{{ $supplierApprovalDetail['due_date'] ?? '-' }}</strong></div>
+                                            <div><span>Termin</span><strong>{{ number_format((int) ($supplierApprovalDetail['payment_term_days'] ?? 0), 0, ',', '.') }} hari</strong></div>
+                                            <div><span>Status</span><strong>{{ $supplierApprovalDetail['status_label'] ?? ucfirst((string) ($supplierApprovalDetail['status'] ?? '-')) }}</strong></div>
+                                        </div>
+                                        @if((int) ($supplierApprovalDetail['attachments_count'] ?? 0) > 0)
+                                            <div class="supplier-approval-preview__docs">
+                                                <span>Lampiran: {{ number_format((int) $supplierApprovalDetail['attachments_count'], 0, ',', '.') }} file</span>
+                                            </div>
+                                        @endif
+                                        @if(! empty($supplierApprovalDetail['attachments_preview']))
+                                            <div class="supplier-approval-preview__attachments">
+                                                @foreach((array) $supplierApprovalDetail['attachments_preview'] as $attachment)
+                                                    <a href="{{ $attachment['url'] ?? '#' }}" target="_blank" rel="noopener">
+                                                        <span>{{ $attachment['label'] ?? 'Lampiran' }}</span>
+                                                        <strong>{{ $attachment['name'] ?? '-' }}</strong>
+                                                    </a>
+                                                @endforeach
+                                                @if((int) ($supplierApprovalDetail['attachments_count'] ?? 0) > count((array) ($supplierApprovalDetail['attachments_preview'] ?? [])))
+                                                    <span class="supplier-approval-preview__more">+{{ (int) ($supplierApprovalDetail['attachments_count'] ?? 0) - count((array) ($supplierApprovalDetail['attachments_preview'] ?? [])) }} file lain</span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                        @if(! empty($supplierApprovalDetail['supplier_invoice_number']) || ! empty($supplierApprovalDetail['delivery_note_number']))
+                                            <div class="supplier-approval-preview__docs">
+                                                @if(! empty($supplierApprovalDetail['supplier_invoice_number']))
+                                                    <span>Invoice: {{ $supplierApprovalDetail['supplier_invoice_number'] }}</span>
+                                                @endif
+                                                @if(! empty($supplierApprovalDetail['delivery_note_number']))
+                                                    <span>Surat jalan: {{ $supplierApprovalDetail['delivery_note_number'] }}</span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                        <div class="supplier-approval-preview__items">
+                                            @forelse((array) ($supplierApprovalDetail['items_preview'] ?? []) as $item)
+                                                <div>
+                                                    <span>{{ $item['name'] ?? '-' }} x {{ number_format((int) ($item['quantity'] ?? 0), 0, ',', '.') }}</span>
+                                                    <strong>Rp {{ number_format((float) ($item['line_total'] ?? 0), 0, ',', '.') }}</strong>
+                                                </div>
+                                            @empty
+                                                <div><span>Detail barang belum tersedia.</span><strong>-</strong></div>
+                                            @endforelse
+                                            @if((int) ($supplierApprovalDetail['items_count'] ?? 0) > count((array) ($supplierApprovalDetail['items_preview'] ?? [])))
+                                                <div><span>+{{ (int) ($supplierApprovalDetail['items_count'] ?? 0) - count((array) ($supplierApprovalDetail['items_preview'] ?? [])) }} barang lainnya</span><strong></strong></div>
+                                            @endif
+                                        </div>
+                                        @if((int) ($supplierApprovalDetail['purchase_id'] ?? 0) > 0)
+                                            <div class="supplier-approval-preview__links">
+                                                <a href="{{ route('admin.supplier-purchases.show', (int) $supplierApprovalDetail['purchase_id']) }}">Detail PO</a>
+                                                <a href="{{ route('admin.supplier-purchases.pdf', (int) $supplierApprovalDetail['purchase_id']) }}">Cetak PDF</a>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
                             </td>
                             <td class="text-slate-700">
                                 <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Diajukan Oleh Pembeli</div>
@@ -1140,6 +1211,164 @@
         .approval-metric-row.approval-label-rose-soft .approval-metric-label {
             color: #9f1239;
         }
+        .supplier-approval-preview {
+            margin-top: 10px;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+            padding: 10px;
+            color: #0f172a;
+        }
+        .supplier-approval-preview__head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+        }
+        .supplier-approval-preview__label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #1d4ed8;
+            font-weight: 700;
+        }
+        .supplier-approval-preview__title {
+            margin-top: 2px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .supplier-approval-preview__sub {
+            margin-top: 1px;
+            font-size: 12px;
+            color: #475569;
+        }
+        .supplier-approval-preview__money {
+            display: grid;
+            grid-template-columns: auto auto;
+            gap: 1px 8px;
+            font-size: 11px;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .supplier-approval-preview__money span {
+            color: #64748b;
+            text-align: left;
+        }
+        .supplier-approval-preview__money strong {
+            color: #1d4ed8;
+            font-weight: 700;
+        }
+        .supplier-approval-preview__grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .supplier-approval-preview__grid div {
+            border: 1px solid #dbeafe;
+            border-radius: 9px;
+            background: #ffffff;
+            padding: 6px 7px;
+        }
+        .supplier-approval-preview__grid span {
+            display: block;
+            font-size: 10px;
+            color: #64748b;
+        }
+        .supplier-approval-preview__grid strong {
+            display: block;
+            margin-top: 1px;
+            font-size: 11px;
+            color: #0f172a;
+            font-weight: 700;
+        }
+        .supplier-approval-preview__docs,
+        .supplier-approval-preview__links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 11px;
+        }
+        .supplier-approval-preview__docs span {
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+            color: #475569;
+            padding: 3px 8px;
+        }
+        .supplier-approval-preview__attachments {
+            display: grid;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .supplier-approval-preview__attachments a {
+            display: grid;
+            grid-template-columns: 92px minmax(0, 1fr);
+            gap: 8px;
+            align-items: center;
+            border: 1px solid #bfdbfe;
+            border-radius: 9px;
+            background: #ffffff;
+            padding: 6px 8px;
+            text-decoration: none;
+        }
+        .supplier-approval-preview__attachments a:hover {
+            background: #eff6ff;
+        }
+        .supplier-approval-preview__attachments span {
+            color: #1d4ed8;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            font-weight: 800;
+        }
+        .supplier-approval-preview__attachments strong {
+            color: #0f172a;
+            font-size: 11px;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+        .supplier-approval-preview__more {
+            display: inline-flex;
+            width: fit-content;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            color: #475569 !important;
+            padding: 3px 8px;
+            font-size: 11px !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            font-weight: 700 !important;
+        }
+        .supplier-approval-preview__items {
+            display: grid;
+            gap: 4px;
+            margin-top: 8px;
+            font-size: 11px;
+        }
+        .supplier-approval-preview__items div {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            border-top: 1px dashed #dbeafe;
+            padding-top: 4px;
+        }
+        .supplier-approval-preview__items span {
+            color: #334155;
+            overflow-wrap: anywhere;
+        }
+        .supplier-approval-preview__items strong {
+            color: #0f172a;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .supplier-approval-preview__links a {
+            color: #1d4ed8;
+            font-weight: 700;
+        }
         .approval-actions form{
             width: 100%;
         }
@@ -1291,4 +1520,3 @@
         .approval-row-critical { border-color: #fb7185 !important; }
     </style>
 </x-app-layout>
-

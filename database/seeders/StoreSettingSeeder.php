@@ -12,7 +12,7 @@ class StoreSettingSeeder extends Seeder
         StoreSetting::query()->updateOrCreate(
             ['id' => 1],
             [
-                'name' => 'BINTANG Mart',
+                'name' => 'Bintang Raya',
                 'address' => 'Jl. Niaga Raya No. 88, Jakarta Selatan',
                 'whatsapp' => '0812-3456-7890',
                 'receipt_footer' => 'Terima kasih telah berbelanja. Barang yang sudah dibeli tidak dapat ditukar kecuali ada cacat produksi.',

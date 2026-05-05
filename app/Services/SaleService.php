@@ -428,6 +428,9 @@ class SaleService
                 }
             }
 
+            $sale->load('items');
+            app(AccountingService::class)->postSale($sale, $user->id);
+
             return $sale->load(['items', 'user']);
         });
     }

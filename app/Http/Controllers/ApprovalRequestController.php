@@ -241,9 +241,11 @@ class ApprovalRequestController extends Controller
             ->where('action', 'approval_sla_escalation_run')
             ->latest('id')
             ->first(['created_at', 'context']);
+        $rows = $query->paginate(20)->withQueryString();
+        $supplierPurchaseApprovalDetails = $this->supplierPurchaseApprovalDetails($rows->getCollection(), $request);
 
         return view('approvals.index', [
-            'rows' => $query->paginate(20)->withQueryString(),
+            'rows' => $rows,
             'status' => $status,
             'type' => $type,
             'priority' => $priority,
@@ -262,6 +264,7 @@ class ApprovalRequestController extends Controller
             'slaTrendWeekly' => $weeklyTrend,
             'slaTrendMonthly' => $monthlyTrend,
             'lastEscalationRun' => $lastEscalationRun,
+            'supplierPurchaseApprovalDetails' => $supplierPurchaseApprovalDetails,
             'summary' => [
                 'pending' => $pendingCount,
                 'overdue' => $overdueCount,
@@ -325,6 +328,130 @@ class ApprovalRequestController extends Controller
         }
 
         return [$weekly, $monthly];
+    }
+
+    private function supplierPurchaseApprovalDetails($rows, Request $request): array
+    {
+        $supplierApprovalRows = $rows
+            ->filter(fn (ApprovalRequest $row) => (string) $row->type === 'supplier.purchase_approval')
+            ->values();
+
+        if ($supplierApprovalRows->isEmpty()) {
+            return [];
+        }
+
+        $purchaseIds = $supplierApprovalRows
+            ->map(fn (ApprovalRequest $row) => (int) data_get((array) $row->payload, 'supplier_purchase_id'))
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $purchases = $purchaseIds === []
+            ? collect()
+            : $this->applyBranchScope(SupplierPurchase::query(), $request->user())
+                ->with([
+                    'supplier:id,name,code',
+                    'items' => fn ($query) => $query->orderBy('id'),
+                    'attachments' => fn ($query) => $query->latest('id'),
+                ])
+                ->withCount('attachments')
+                ->whereIn('id', $purchaseIds)
+                ->get()
+                ->keyBy('id');
+
+        return $supplierApprovalRows
+            ->mapWithKeys(function (ApprovalRequest $row) use ($purchases) {
+                $payload = (array) ($row->payload ?? []);
+                $purchaseId = (int) data_get($payload, 'supplier_purchase_id');
+                $purchase = $purchases->get($purchaseId);
+                $items = $purchase
+                    ? $purchase->items->take(5)->map(fn ($item) => [
+                        'name' => (string) $item->product_name,
+                        'quantity' => (int) $item->quantity,
+                        'unit_cost' => (float) $item->unit_cost,
+                        'line_total' => (float) $item->line_total,
+                    ])->values()->all()
+                    : (array) data_get($payload, 'items_preview', []);
+                $attachments = $purchase
+                    ? $purchase->attachments->take(4)->map(fn ($attachment) => [
+                        'kind' => (string) $attachment->kind,
+                        'label' => $this->supplierPurchaseAttachmentKindLabel((string) $attachment->kind),
+                        'name' => (string) ($attachment->original_name ?: basename((string) $attachment->path)),
+                        'url' => route('admin.supplier-purchase-attachments.download', $attachment),
+                        'mime_type' => (string) ($attachment->mime_type ?? ''),
+                        'size' => (int) ($attachment->size ?? 0),
+                    ])->values()->all()
+                    : [];
+
+                return [(int) $row->id => [
+                    'purchase_id' => $purchaseId,
+                    'number' => (string) ($purchase?->number ?? data_get($payload, 'number', '-')),
+                    'supplier_name' => (string) ($purchase?->supplier?->name ?? data_get($payload, 'supplier_name', '-')),
+                    'status' => (string) ($purchase?->status ?? '-'),
+                    'status_label' => $this->supplierPurchaseStatusLabel((string) ($purchase?->status ?? '')),
+                    'payment_status' => (string) ($purchase?->payment_status ?? '-'),
+                    'payment_status_label' => $this->supplierPurchasePaymentStatusLabel((string) ($purchase?->payment_status ?? '')),
+                    'ordered_at' => $purchase?->ordered_at?->format('d/m/Y') ?? $this->formatPayloadDate((string) data_get($payload, 'ordered_at', '')),
+                    'due_date' => $purchase?->due_date?->format('d/m/Y') ?? $this->formatPayloadDate((string) data_get($payload, 'due_date', '')),
+                    'payment_term_days' => (int) ($purchase?->payment_term_days ?? data_get($payload, 'payment_term_days', 0)),
+                    'supplier_invoice_number' => (string) ($purchase?->supplier_invoice_number ?? data_get($payload, 'supplier_invoice_number', '')),
+                    'delivery_note_number' => (string) ($purchase?->delivery_note_number ?? data_get($payload, 'delivery_note_number', '')),
+                    'total_amount' => (float) ($purchase?->total_amount ?? data_get($payload, 'total_amount', 0)),
+                    'remaining_amount' => (float) ($purchase?->remaining_amount ?? data_get($payload, 'remaining_amount', data_get($payload, 'total_amount', 0))),
+                    'items_count' => (int) ($purchase?->items->count() ?? data_get($payload, 'items_count', count($items))),
+                    'attachments_count' => (int) ($purchase?->attachments_count ?? 0),
+                    'items_preview' => $items,
+                    'attachments_preview' => $attachments,
+                    'exists' => (bool) $purchase,
+                ]];
+            })
+            ->all();
+    }
+
+    private function supplierPurchaseAttachmentKindLabel(string $kind): string
+    {
+        return match($kind) {
+            'supplier_invoice' => 'Invoice',
+            'delivery_note' => 'Surat Jalan',
+            'payment_proof' => 'Bukti Transfer',
+            'received_photo' => 'Foto Barang',
+            default => 'Lampiran',
+        };
+    }
+
+    private function supplierPurchaseStatusLabel(string $status): string
+    {
+        return match($status) {
+            'draft' => 'Draft',
+            'received' => 'Barang Diterima',
+            'cancelled' => 'Dibatalkan',
+            default => $status !== '' ? ucfirst($status) : '-',
+        };
+    }
+
+    private function supplierPurchasePaymentStatusLabel(string $status): string
+    {
+        return match($status) {
+            'unpaid' => 'Belum Bayar',
+            'partial' => 'Dibayar Sebagian',
+            'overdue' => 'Lewat Tempo',
+            'paid' => 'Lunas',
+            default => $status !== '' ? ucfirst($status) : '-',
+        };
+    }
+
+    private function formatPayloadDate(string $date): string
+    {
+        if ($date === '') {
+            return '-';
+        }
+
+        try {
+            return Carbon::parse($date)->format('d/m/Y');
+        } catch (\Throwable) {
+            return $date;
+        }
     }
 
     private function prioritySql(int $saleHighMinutes, int $saleSlaMinutes, int $exportSlaMinutes): string

@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             SaleSeeder::class,
             ExpenseSeeder::class,
             SupplierCompleteSeeder::class,
+            SupplierPaginationDemoSeeder::class,
             CustomerFollowUpSeeder::class,
             OperationalDemoSeeder::class,
             AuditLogDemoSeeder::class,

@@ -5,26 +5,27 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class SupplierPurchasePayment extends Model
+class SupplierPurchaseReturn extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'supplier_purchase_id',
-        'received_by',
-        'paid_at',
+        'supplier_purchase_item_id',
+        'created_by',
+        'quantity',
+        'unit_cost',
         'amount',
-        'payment_method',
-        'reference_number',
+        'reason',
         'note',
     ];
 
     protected function casts(): array
     {
         return [
-            'paid_at' => 'datetime',
+            'quantity' => 'integer',
+            'unit_cost' => 'decimal:2',
             'amount' => 'decimal:2',
         ];
     }
@@ -34,13 +35,13 @@ class SupplierPurchasePayment extends Model
         return $this->belongsTo(SupplierPurchase::class, 'supplier_purchase_id');
     }
 
-    public function receiver(): BelongsTo
+    public function item(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'received_by');
+        return $this->belongsTo(SupplierPurchaseItem::class, 'supplier_purchase_item_id');
     }
 
-    public function proofAttachments(): HasMany
+    public function creator(): BelongsTo
     {
-        return $this->hasMany(SupplierPurchaseAttachment::class, 'supplier_purchase_payment_id');
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

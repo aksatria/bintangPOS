@@ -236,6 +236,7 @@ Schedule::command('ops:scheduler-heartbeat')->everyMinute();
 Schedule::command('ops:drill-disaster-recovery --staging')->monthlyOn(1, '04:30');
 Schedule::command('ops:recovery-pack --staging --telegram')->monthlyOn(1, '05:00');
 Schedule::command('stock-transfer:send-aging-alert')->hourly();
+Schedule::command('suppliers:debt-due-reminder --days=7 --telegram')->dailyAt('08:30');
 
 Artisan::command('data:diversify-payment-methods {--limit=0}', function () {
     $limit = max(0, (int) $this->option('limit'));

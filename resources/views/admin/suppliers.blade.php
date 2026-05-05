@@ -36,6 +36,9 @@
         .ux-kpi-value.danger { color:#be123c; }
         .ux-filter-grid { display: grid; gap: .6rem; grid-template-columns: 1fr; }
         @media (min-width: 860px) { .ux-filter-grid { grid-template-columns: 1fr 180px auto; } }
+        .ux-purchase-filter-grid { display:grid; gap:.6rem; grid-template-columns:1fr; }
+        @media (min-width: 980px) { .ux-purchase-filter-grid { grid-template-columns: minmax(190px,1fr) 150px 145px 145px 150px; } }
+        @media (min-width: 1180px) { .ux-purchase-filter-grid { grid-template-columns: minmax(190px,1fr) 150px 145px 145px 145px 145px 135px 135px auto; } }
         .ux-form-grid { display: grid; gap: .68rem; }
         .ux-field { display: grid; gap: .32rem; }
         .ux-label { font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; color: #64748b; font-weight: 700; }
@@ -46,6 +49,8 @@
         .ux-btn:hover { background: #f8fafc; }
         .ux-btn-primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
         .ux-btn-primary:hover { background: #1e40af; border-color: #1e40af; }
+        .ux-btn-danger { color:#be123c; border-color:#fecdd3; background:#fff1f2; }
+        .ux-btn-danger:hover { background:#ffe4e6; }
         .ux-btn-block { width: 100%; }
         .ux-table-wrap { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 12px; }
         .ux-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -75,6 +80,7 @@
         .ux-chip-inactive, .ux-chip-overdue { color: #9f1239; border-color: #fecdd3; background: #fff1f2; }
         .ux-chip-partial { color: #c2410c; border-color: #fdba74; background: #fff7ed; }
         .ux-chip-draft { color:#1d4ed8; border-color:#bfdbfe; background:#eff6ff; }
+        .ux-chip-partial_received { color:#c2410c; border-color:#fdba74; background:#fff7ed; }
         .ux-chip-received { color:#047857; border-color:#a7f3d0; background:#ecfdf5; }
         .ux-chip-cancelled { color:#475569; border-color:#cbd5e1; background:#f8fafc; }
         .ux-chip-term { color:#a16207; border-color:#fde68a; background:#fffbeb; }
@@ -108,6 +114,25 @@
         .ux-schedule-line strong { color:#0f172a; font-weight:600; text-align:left; }
         .ux-purchase-actions { grid-column: 1 / -1; display: grid; gap: .5rem; padding-top: .72rem; border-top: 1px solid #e2e8f0; }
         .ux-payment-section { margin-top:.42rem; padding-top:.9rem; border-top:1px dashed #cbd5e1; }
+        .ux-dashboard-grid { display:grid; gap:.75rem; grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .ux-dashboard-card { border:1px solid #e2e8f0; border-radius:12px; background:#fff; padding:.8rem; }
+        .ux-dashboard-title { margin:0 0 .55rem; font-size:.74rem; text-transform:uppercase; letter-spacing:.07em; color:#475569; font-weight:700; }
+        .ux-dashboard-list { display:grid; gap:.48rem; }
+        .ux-dashboard-row { border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; padding:.55rem .62rem; font-size:.78rem; color:#475569; }
+        .ux-dashboard-row strong { color:#0f172a; font-weight:700; }
+        .ux-dashboard-row.is-danger { border-color:#fecdd3; background:#fff1f2; color:#9f1239; }
+        .ux-dashboard-row.is-danger strong { color:#9f1239; }
+        .ux-dashboard-empty { color:#64748b; font-size:.78rem; border:1px dashed #cbd5e1; border-radius:10px; padding:.58rem; background:#f8fafc; }
+        .ux-report-grid { display:grid; gap:.72rem; grid-template-columns:repeat(4,minmax(0,1fr)); margin-bottom:.75rem; }
+        .ux-report-card { border:1px solid #e2e8f0; border-radius:12px; padding:.72rem .78rem; background:#fff; }
+        .ux-report-card span { display:block; color:#64748b; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+        .ux-report-card strong { display:block; margin-top:.22rem; color:#0f172a; font-size:1rem; font-weight:750; }
+        .ux-report-table { width:100%; border-collapse:collapse; }
+        .ux-report-table th, .ux-report-table td { padding:.62rem .58rem; border-bottom:1px solid #e2e8f0; font-size:.78rem; text-align:left; vertical-align:top; }
+        .ux-report-table th { color:#475569; background:#f8fafc; text-transform:uppercase; letter-spacing:.05em; font-size:.68rem; }
+        .ux-report-table tr:last-child td { border-bottom:0; }
+        @media (max-width: 860px) { .ux-report-grid { grid-template-columns:1fr 1fr; } }
+        @media (max-width: 560px) { .ux-report-grid { grid-template-columns:1fr; } }
         .ux-money-box { display: grid; gap: .26rem; max-width: 190px; }
         .ux-money-line { display: grid; grid-template-columns: 46px auto; gap: .35rem; align-items: baseline; font-size: .8rem; }
         .ux-money-line span:first-child { color: #64748b; }
@@ -115,6 +140,10 @@
         .ux-money-line.total strong { color: #1d4ed8; }
         .ux-money-line.remaining strong { color: #be123c; }
         .ux-money-line.remaining.is-clear strong { color: #047857; }
+        .ux-draft-summary { display:grid; gap:.55rem; grid-template-columns:1fr; border:1px solid #dbeafe; background:#eff6ff; border-radius:12px; padding:.75rem; }
+        .ux-draft-summary div { display:flex; align-items:center; justify-content:space-between; gap:.75rem; font-size:.8rem; }
+        .ux-draft-summary span { color:#475569; }
+        .ux-draft-summary strong { color:#0f172a; font-weight:700; text-align:right; }
         .ux-history-items { grid-column:1 / -1; border-top:1px solid #e2e8f0; padding-top:.72rem; }
         .ux-history-items summary { cursor:pointer; color:#334155; font-size:.78rem; font-weight:600; list-style:none; display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
         .ux-history-items summary::-webkit-details-marker { display:none; }
@@ -123,7 +152,15 @@
         .ux-history-body { display:grid; gap:.35rem; margin-top:.58rem; }
         .ux-history-item { display:flex; justify-content:space-between; gap:.6rem; color:#475569; font-size:.78rem; }
         .ux-history-item strong { color:#0f172a; font-weight:600; }
-        .ux-inline-form { display:grid; grid-template-columns: minmax(180px,1fr) 160px 120px; gap:.5rem; align-items:center; }
+        .ux-approval-history, .ux-payment-history { grid-column:1 / -1; border-top:1px solid #e2e8f0; padding-top:.72rem; }
+        .ux-approval-history summary, .ux-payment-history summary { cursor:pointer; color:#334155; font-size:.78rem; font-weight:600; list-style:none; display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
+        .ux-approval-history summary::-webkit-details-marker, .ux-payment-history summary::-webkit-details-marker { display:none; }
+        .ux-approval-history summary::after, .ux-payment-history summary::after { content:'Buka'; color:#1d4ed8; font-size:.74rem; font-weight:600; }
+        .ux-approval-history[open] summary::after, .ux-payment-history[open] summary::after { content:'Tutup'; }
+        .ux-approval-log { display:grid; gap:.4rem; margin-top:.58rem; }
+        .ux-approval-log-row { border:1px solid #e2e8f0; border-radius:10px; padding:.52rem .58rem; background:#f8fafc; color:#475569; font-size:.76rem; line-height:1.45; }
+        .ux-approval-log-row strong { color:#0f172a; font-weight:600; }
+        .ux-inline-form { display:grid; grid-template-columns: minmax(160px,1fr) minmax(150px,1fr) 150px 110px; gap:.5rem; align-items:center; }
         .ux-inline-form .ux-input, .ux-inline-form .ux-select { min-height:2.2rem; }
         .ux-edit-draft { grid-column:1 / -1; border-top:1px solid #e2e8f0; padding-top:.72rem; }
         .ux-edit-draft summary { cursor:pointer; color:#1d4ed8; font-size:.8rem; font-weight:600; list-style:none; display:inline-flex; align-items:center; gap:.4rem; }
@@ -139,6 +176,7 @@
         .ux-ajax-panel { transition: opacity .16s ease, transform .16s ease; }
         .ux-ajax-panel.is-loading { opacity:.48; transform:translateY(2px); pointer-events:none; }
         @media (max-width: 1280px) { .ux-purchase-row { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 1180px) { .ux-dashboard-grid { grid-template-columns:1fr; } }
         @media (max-width: 860px) { .ux-inline-form { grid-template-columns: 1fr; } }
         @media (max-width: 720px) { .ux-purchase-row { grid-template-columns: 1fr; } }
     </style>
@@ -170,6 +208,87 @@
                     </div>
                 </div>
 
+                <div class="ux-card">
+                    <div class="ux-card-head"><h3 class="ux-card-title">Dashboard Kontrol Hutang</h3></div>
+                    <div class="ux-card-body">
+                        <div class="ux-dashboard-grid">
+                            <div class="ux-dashboard-card">
+                                <h4 class="ux-dashboard-title">Reminder Jatuh Tempo</h4>
+                                <div class="ux-dashboard-list">
+                                    @forelse(data_get($supplierDebtDashboard ?? [], 'due_alerts', collect()) as $alert)
+                                        <a class="ux-dashboard-row {{ ! empty($alert['is_overdue']) ? 'is-danger' : '' }}" href="{{ route('admin.supplier-purchases.show', (int) $alert['id']) }}">
+                                            <strong>{{ $alert['number'] }}</strong> · {{ $alert['supplier'] }}<br>
+                                            Due {{ $alert['due_date'] }} · Rp {{ number_format((float) $alert['remaining_amount'], 0, ',', '.') }}
+                                        </a>
+                                    @empty
+                                        <div class="ux-dashboard-empty">Tidak ada hutang jatuh tempo dalam 7 hari.</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                            <div class="ux-dashboard-card">
+                                <h4 class="ux-dashboard-title">Supplier Hutang Terbesar</h4>
+                                <div class="ux-dashboard-list">
+                                    @forelse(data_get($supplierDebtDashboard ?? [], 'top_suppliers', collect()) as $topSupplier)
+                                        <div class="ux-dashboard-row">
+                                            <strong>{{ $topSupplier['supplier'] }}</strong><br>
+                                            {{ number_format((int) $topSupplier['count'], 0, ',', '.') }} PO · Rp {{ number_format((float) $topSupplier['remaining_amount'], 0, ',', '.') }}
+                                        </div>
+                                    @empty
+                                        <div class="ux-dashboard-empty">Belum ada hutang terbuka.</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                            <div class="ux-dashboard-card">
+                                <h4 class="ux-dashboard-title">Aktivitas Pembayaran</h4>
+                                <div class="ux-dashboard-list">
+                                    <div class="ux-dashboard-row">
+                                        <strong>{{ number_format((int) data_get($supplierDebtDashboard ?? [], 'pending_approvals', 0), 0, ',', '.') }}</strong> approval menunggu owner<br>
+                                        <strong>{{ number_format((int) data_get($supplierDebtDashboard ?? [], 'open_count', 0), 0, ',', '.') }}</strong> PO hutang terbuka
+                                    </div>
+                                    @forelse(data_get($supplierDebtDashboard ?? [], 'recent_payments', collect()) as $payment)
+                                        <div class="ux-dashboard-row">
+                                            <strong>Rp {{ number_format((float) $payment['amount'], 0, ',', '.') }}</strong> · {{ $payment['supplier'] }}<br>
+                                            {{ $payment['number'] }} · {{ $payment['method'] }} · {{ $payment['paid_at'] }}
+                                        </div>
+                                    @empty
+                                        <div class="ux-dashboard-empty">Belum ada pembayaran terbaru.</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <details class="ux-card ux-collapsible-card" open>
+                    <summary class="ux-card-head"><h3 class="ux-card-title">Laporan Hutang Supplier</h3><span class="ux-card-toggle-wrap"><a class="ux-btn" href="{{ route('admin.supplier-debts.index') }}">Buka Laporan Lengkap</a><span class="ux-card-toggle-text"></span><span class="ux-card-toggle" aria-hidden="true"></span></span></summary>
+                    <div class="ux-card-body">
+                        <div class="ux-report-grid">
+                            <div class="ux-report-card"><span>Total Hutang</span><strong>Rp {{ number_format((float) data_get($supplierDebtReport ?? [], 'total_remaining', 0), 0, ',', '.') }}</strong></div>
+                            <div class="ux-report-card"><span>Overdue</span><strong>Rp {{ number_format((float) data_get($supplierDebtReport ?? [], 'total_overdue', 0), 0, ',', '.') }}</strong></div>
+                            <div class="ux-report-card"><span>PO Terbuka</span><strong>{{ number_format((int) data_get($supplierDebtReport ?? [], 'open_count', 0), 0, ',', '.') }}</strong></div>
+                            <div class="ux-report-card"><span>Supplier Terlibat</span><strong>{{ number_format((int) data_get($supplierDebtReport ?? [], 'supplier_count', 0), 0, ',', '.') }}</strong></div>
+                        </div>
+                        <div class="ux-table-wrap">
+                            <table class="ux-report-table">
+                                <thead><tr><th>Supplier</th><th>PO</th><th>Jatuh Tempo Terdekat</th><th>Overdue</th><th>Sisa Hutang</th></tr></thead>
+                                <tbody>
+                                    @forelse(data_get($supplierDebtReport ?? [], 'by_supplier', collect()) as $debtRow)
+                                        <tr>
+                                            <td><strong>{{ $debtRow['supplier'] }}</strong><div class="ux-cell-sub">{{ $debtRow['code'] }}</div></td>
+                                            <td>{{ number_format((int) $debtRow['open_count'], 0, ',', '.') }}</td>
+                                            <td>{{ $debtRow['nearest_due'] }}</td>
+                                            <td><span class="ux-chip {{ (float) $debtRow['overdue_amount'] > 0 ? 'ux-chip-overdue' : 'ux-chip-paid' }}">Rp {{ number_format((float) $debtRow['overdue_amount'], 0, ',', '.') }}</span></td>
+                                            <td><strong>Rp {{ number_format((float) $debtRow['remaining_amount'], 0, ',', '.') }}</strong></td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="5" class="text-slate-500">Belum ada hutang supplier terbuka.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </details>
+
                 <details class="ux-card ux-collapsible-card ux-ajax-panel" id="supplier-list-panel" data-ajax-panel="supplier-list">
                     <summary class="ux-card-head"><h3 class="ux-card-title">Daftar Supplier</h3><span class="ux-card-toggle-wrap"><span class="ux-card-toggle-text"></span><span class="ux-card-toggle" aria-hidden="true"></span></span></summary>
                     <div class="ux-card-body space-y-4">
@@ -190,7 +309,7 @@
                                 @forelse($suppliers as $supplier)
                                     <tr>
                                         <td>
-                                            <div class="ux-cell-title">{{ $supplier->name }}</div>
+                                            <div class="ux-cell-title"><a href="{{ route('admin.suppliers.show', $supplier) }}">{{ $supplier->name }}</a></div>
                                             <details class="ux-contact-toggle">
                                                 <summary>Detail kontak</summary>
                                                 <div class="ux-contact-grid">
@@ -198,6 +317,10 @@
                                                     <span>No HP: {{ $supplier->phone ?: '-' }}</span>
                                                     <span>Email: {{ $supplier->email ?: '-' }}</span>
                                                     <span>Alamat: {{ $supplier->address ?: '-' }}</span>
+                                                    <span>Total PO: {{ number_format((int) ($supplier->purchases_count ?? 0), 0, ',', '.') }}</span>
+                                                    <span>Hutang aktif: Rp {{ number_format((float) ($supplier->open_debt_amount ?? 0), 0, ',', '.') }}</span>
+                                                    <span>Terakhir order: {{ $supplier->last_purchase_at ? \Illuminate\Support\Carbon::parse($supplier->last_purchase_at)->format('d/m/Y') : '-' }}</span>
+                                                    <span><a href="{{ route('admin.suppliers.show', $supplier) }}">Buka halaman detail supplier</a></span>
                                                 </div>
                                             </details>
                                         </td>
@@ -263,11 +386,58 @@
                 </details>
 
                 <div class="ux-card ux-ajax-panel" id="supplier-purchases-panel" data-ajax-panel="supplier-purchases">
-                    <div class="ux-card-head"><h3 class="ux-card-title">Pembelian Supplier Terakhir</h3></div>
+                    <div class="ux-card-head" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;">
+                        <h3 class="ux-card-title">Pembelian Supplier Terakhir</h3>
+                        <a class="ux-btn" href="{{ route('admin.supplier-purchases.export.excel', request()->query()) }}">Export Excel</a>
+                    </div>
                     <div class="ux-card-body">
                         <div class="ux-footnote-box mb-3">
-                            Catatan: <strong>Draft</strong> diajukan dulu ke owner lewat tombol <strong>Ajukan Persetujuan</strong>. Setelah disetujui, tombol <strong>Barang Diterima</strong> bisa dipakai untuk menandai barang sudah datang dan mengunci draft.
+                            Catatan: <strong>Draft</strong> diajukan dulu ke owner lewat tombol <strong>Ajukan Persetujuan</strong>. Sebelum approval, isi invoice/surat jalan atau upload minimal 1 lampiran di <strong>Detail PO</strong>.
                         </div>
+                        <form method="GET" action="{{ route('admin.suppliers.index') }}" class="ux-purchase-filter-grid mb-3">
+                            <input class="ux-input" type="text" name="purchase_q" value="{{ $filters['purchaseQ'] ?? '' }}" placeholder="Cari PO, invoice, surat jalan, supplier">
+                            <select class="ux-select" name="purchase_supplier_id">
+                                <option value="0" @selected((int) ($filters['purchaseSupplierId'] ?? 0) === 0)>Semua Supplier</option>
+                                @foreach($supplierOptions as $supplierOption)
+                                    <option value="{{ $supplierOption->id }}" @selected((int) ($filters['purchaseSupplierId'] ?? 0) === (int) $supplierOption->id)>{{ $supplierOption->name }}</option>
+                                @endforeach
+                            </select>
+                            <select class="ux-select" name="purchase_status">
+                                <option value="all" @selected(($filters['purchaseStatus'] ?? 'all') === 'all')>Status Barang</option>
+                                <option value="draft" @selected(($filters['purchaseStatus'] ?? '') === 'draft')>Draft</option>
+                                <option value="partial_received" @selected(($filters['purchaseStatus'] ?? '') === 'partial_received')>Diterima Sebagian</option>
+                                <option value="received" @selected(($filters['purchaseStatus'] ?? '') === 'received')>Barang Diterima</option>
+                                <option value="cancelled" @selected(($filters['purchaseStatus'] ?? '') === 'cancelled')>Dibatalkan</option>
+                            </select>
+                            <select class="ux-select" name="payment_status">
+                                <option value="all" @selected(($filters['paymentStatus'] ?? 'all') === 'all')>Status Bayar</option>
+                                <option value="unpaid" @selected(($filters['paymentStatus'] ?? '') === 'unpaid')>Belum Bayar</option>
+                                <option value="partial" @selected(($filters['paymentStatus'] ?? '') === 'partial')>Dibayar Sebagian</option>
+                                <option value="overdue" @selected(($filters['paymentStatus'] ?? '') === 'overdue')>Lewat Tempo</option>
+                                <option value="paid" @selected(($filters['paymentStatus'] ?? '') === 'paid')>Lunas</option>
+                            </select>
+                            <select class="ux-select" name="approval_status">
+                                <option value="all" @selected(($filters['approvalFilter'] ?? 'all') === 'all')>Approval</option>
+                                <option value="none" @selected(($filters['approvalFilter'] ?? '') === 'none')>Belum diajukan</option>
+                                <option value="pending" @selected(($filters['approvalFilter'] ?? '') === 'pending')>Menunggu</option>
+                                <option value="approved" @selected(($filters['approvalFilter'] ?? '') === 'approved')>Disetujui</option>
+                                <option value="rejected" @selected(($filters['approvalFilter'] ?? '') === 'rejected')>Ditolak</option>
+                                <option value="stale" @selected(($filters['approvalFilter'] ?? '') === 'stale')>Perlu ulang</option>
+                            </select>
+                            <select class="ux-select" name="debt_filter">
+                                <option value="all" @selected(($filters['debtFilter'] ?? 'all') === 'all')>Semua Hutang</option>
+                                <option value="open" @selected(($filters['debtFilter'] ?? '') === 'open')>Belum Lunas</option>
+                                <option value="closed" @selected(($filters['debtFilter'] ?? '') === 'closed')>Sudah Lunas</option>
+                            </select>
+                            <select class="ux-select" name="attachment_filter">
+                                <option value="all" @selected(($filters['attachmentFilter'] ?? 'all') === 'all')>Lampiran</option>
+                                <option value="with" @selected(($filters['attachmentFilter'] ?? '') === 'with')>Ada Lampiran</option>
+                                <option value="without" @selected(($filters['attachmentFilter'] ?? '') === 'without')>Tanpa Lampiran</option>
+                            </select>
+                            <input class="ux-input" type="date" name="due_from" value="{{ $filters['dueFrom'] ?? '' }}" title="Jatuh tempo dari">
+                            <input class="ux-input" type="date" name="due_to" value="{{ $filters['dueTo'] ?? '' }}" title="Jatuh tempo sampai">
+                            <button class="ux-btn ux-btn-primary" type="submit">Filter</button>
+                        </form>
                         <div class="ux-purchase-list">
                             @forelse($purchases as $purchase)
                                 @php
@@ -280,14 +450,24 @@
                                     $purchaseApproved = $approvalStatus === 'approved';
                                     $purchasePendingApproval = $approvalStatus === 'pending';
                                     $purchaseRejectedApproval = $approvalStatus === 'rejected';
+                                    $purchaseStaleApproval = $approvalStatus === 'stale';
+                                    $approvalHistory = (array) ($supplierPurchaseApprovalHistory[(int) $purchase->id] ?? []);
+                                    $purchaseStatusLabel = (string) (($purchaseStatusLabels ?? [])[(string) $purchase->status] ?? ucfirst((string) $purchase->status));
+                                    $paymentStatusLabel = (string) (($paymentStatusLabels ?? [])[$payStatus] ?? ucfirst($payStatus));
                                 @endphp
                                 <div class="ux-purchase-row">
                                     <div class="ux-purchase-meta">
                                         <div class="ux-label">Dokumen</div>
                                         <div class="ux-cell-title">{{ $purchase->number }}</div>
                                         <div class="ux-cell-sub">{{ $purchase->supplier?->name ?? '-' }}</div>
+                                        @if($purchase->supplier_invoice_number)
+                                            <div class="ux-cell-sub">Invoice: {{ $purchase->supplier_invoice_number }}</div>
+                                        @endif
+                                        @if($purchase->delivery_note_number)
+                                            <div class="ux-cell-sub">Surat jalan: {{ $purchase->delivery_note_number }}</div>
+                                        @endif
                                         <div class="mt-1">
-                                            <span class="ux-chip {{ $purchase->status === 'draft' ? 'ux-chip-draft' : ($purchase->status === 'received' ? 'ux-chip-received' : 'ux-chip-cancelled') }}">Barang: {{ strtoupper($purchase->status) }}</span>
+                                            <span class="ux-chip ux-chip-{{ $purchase->status }}">Barang: {{ $purchaseStatusLabel }}</span>
                                         </div>
                                     </div>
                                     <div class="ux-purchase-meta">
@@ -308,12 +488,15 @@
                                             <div class="ux-money-line remaining {{ $remainingAmount <= 0 ? 'is-clear' : '' }}"><span>Sisa</span><strong>Rp {{ number_format($remainingAmount, 0, ',', '.') }}</strong></div>
                                         </div>
                                         @if((float) ($purchase->shipping_amount ?? 0) > 0)
-                                            <div class="ux-cell-sub">Ongkir: Rp {{ number_format((float) $purchase->shipping_amount, 0, ',', '.') }}</div>
+                                            <div class="ux-cell-sub">Ongkir: Rp {{ number_format((float) $purchase->shipping_amount, 0, ',', '.') }} - {{ ($purchase->shipping_accounting_treatment ?? 'inventory') === 'inventory' ? 'Masuk HPP' : 'Beban Ongkir' }}</div>
                                         @endif
                                         @if((float) ($purchase->paid_amount ?? 0) > 0)
                                             <div class="ux-cell-sub">Sudah bayar: Rp {{ number_format((float) $purchase->paid_amount, 0, ',', '.') }}</div>
                                         @endif
-                                        <div class="mt-1"><span class="ux-chip {{ $payStatus === 'paid' ? 'ux-chip-paid' : ($payStatus === 'overdue' ? 'ux-chip-overdue' : ($payStatus === 'partial' ? 'ux-chip-partial' : 'ux-chip-inactive')) }}">{{ strtoupper($payStatus) }}</span></div>
+                                        @if((int) ($purchase->attachments_count ?? 0) > 0)
+                                            <div class="ux-cell-sub">Lampiran: {{ number_format((int) $purchase->attachments_count, 0, ',', '.') }} file</div>
+                                        @endif
+                                        <div class="mt-1"><span class="ux-chip {{ $payStatus === 'paid' ? 'ux-chip-paid' : ($payStatus === 'overdue' ? 'ux-chip-overdue' : ($payStatus === 'partial' ? 'ux-chip-partial' : 'ux-chip-inactive')) }}">{{ $paymentStatusLabel }}</span></div>
                                         @if($purchaseApproved)
                                             <div class="mt-1"><span class="ux-chip ux-chip-active">Disetujui owner</span></div>
                                         @elseif($purchasePendingApproval)
@@ -325,6 +508,9 @@
                                             @elseif($approvalReviewedAt !== '')
                                                 <div class="ux-cell-sub">Ditolak pada {{ $approvalReviewedAt }}</div>
                                             @endif
+                                        @elseif($purchaseStaleApproval)
+                                            <div class="mt-1"><span class="ux-chip ux-chip-partial">Perlu persetujuan ulang</span></div>
+                                            <div class="ux-cell-sub">Draft berubah setelah approval terakhir.</div>
                                         @endif
                                     </div>
                                     <details class="ux-history-items">
@@ -333,7 +519,7 @@
                                             @forelse($purchase->items as $item)
                                                 <div class="ux-history-item">
                                                     <span><strong>{{ $item->product_name }}</strong> x {{ number_format((int) $item->quantity, 0, ',', '.') }}</span>
-                                                    <span>Rp {{ number_format((float) $item->line_total, 0, ',', '.') }}</span>
+                                            <span>Rp {{ number_format((float) (($item->landed_line_total ?? 0) > 0 ? $item->landed_line_total : $item->line_total), 0, ',', '.') }}</span>
                                                 </div>
                                             @empty
                                                 <div class="ux-cell-sub">Belum ada detail barang.</div>
@@ -343,6 +529,44 @@
                                             @endif
                                         </div>
                                     </details>
+                                    @if($purchase->payments->isNotEmpty())
+                                        <details class="ux-payment-history">
+                                            <summary>Riwayat pembayaran ({{ $purchase->payments->count() }})</summary>
+                                            <div class="ux-approval-log">
+                                                @foreach($purchase->payments as $payment)
+                                                    <div class="ux-approval-log-row">
+                                                        <div><strong>Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}</strong> via {{ $payment->payment_method }}</div>
+                                                        @if(! empty($payment->reference_number))
+                                                            <div>Referensi: {{ $payment->reference_number }}</div>
+                                                        @endif
+                                                        <div>{{ optional($payment->paid_at)->format('d/m/Y H:i') }} oleh {{ $payment->receiver?->name ?? '-' }}</div>
+                                                        @if($payment->note)
+                                                            <div>Catatan: {{ $payment->note }}</div>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </details>
+                                    @endif
+                                    @if($approvalHistory !== [])
+                                        <details class="ux-approval-history">
+                                            <summary>Riwayat approval ({{ count($approvalHistory) }})</summary>
+                                            <div class="ux-approval-log">
+                                                @foreach($approvalHistory as $approvalLog)
+                                                    <div class="ux-approval-log-row">
+                                                        <div><strong>{{ ($approvalStatusLabels ?? [])[(string) ($approvalLog['status'] ?? '')] ?? ucfirst((string) ($approvalLog['status'] ?? '-')) }}</strong>{{ ! empty($approvalLog['is_current']) ? ' - versi draft saat ini' : ' - versi lama' }}</div>
+                                                        <div>Diajukan: {{ $approvalLog['requester'] ?? '-' }}{{ ! empty($approvalLog['requested_at']) ? ' pada '.$approvalLog['requested_at'] : '' }}</div>
+                                                        @if(! empty($approvalLog['reviewed_at']))
+                                                            <div>Diproses: {{ $approvalLog['reviewer'] ?? '-' }} pada {{ $approvalLog['reviewed_at'] }}</div>
+                                                        @endif
+                                                        @if(! empty($approvalLog['review_note']))
+                                                            <div>Catatan: {{ $approvalLog['review_note'] }}</div>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </details>
+                                    @endif
                                     <div class="ux-purchase-actions">
                                         @if($purchase->status === 'draft')
                                             @php
@@ -363,9 +587,14 @@
                                                             </select>
                                                         </label>
                                                         <div class="ux-two-col">
+                                                            <label class="ux-field"><span class="ux-label">No Invoice Supplier</span><input class="ux-input" name="supplier_invoice_number" value="{{ $purchase->supplier_invoice_number }}"></label>
+                                                            <label class="ux-field"><span class="ux-label">No Surat Jalan</span><input class="ux-input" name="delivery_note_number" value="{{ $purchase->delivery_note_number }}"></label>
+                                                        </div>
+                                                        <div class="ux-two-col">
                                                             <label class="ux-field"><span class="ux-label">Tanggal Order</span><input class="ux-input" type="date" name="ordered_at" value="{{ optional($purchase->ordered_at)->toDateString() }}" required></label>
                                                             <label class="ux-field"><span class="ux-label">Termin Pembelian (Hari)</span><input class="ux-input" type="number" min="0" max="365" name="payment_term_days" value="{{ (int) ($purchase->payment_term_days ?? 0) }}"></label>
                                                         </div>
+                                                        <label class="ux-field"><span class="ux-label">Jatuh Tempo Manual</span><input class="ux-input" type="date" name="due_date" value="{{ optional($purchase->due_date)->toDateString() }}"><span class="ux-help">Kosongkan jika ingin mengikuti termin dari tanggal order.</span></label>
                                                         <label class="ux-field">
                                                             <span class="ux-label">Barang Pembelian</span>
                                                             <textarea class="ux-textarea" name="bulk_items" rows="5" required>{{ $editItemsText }}</textarea>
@@ -375,7 +604,10 @@
                                                             <label class="ux-field"><span class="ux-label">Diskon</span><input class="ux-input" type="number" min="0" step="0.01" name="discount_amount" value="{{ (float) $purchase->discount_amount }}"></label>
                                                             <label class="ux-field"><span class="ux-label">Pajak</span><input class="ux-input" type="number" min="0" step="0.01" name="tax_amount" value="{{ (float) $purchase->tax_amount }}"></label>
                                                         </div>
-                                                        <label class="ux-field"><span class="ux-label">Ongkir</span><input class="ux-input" type="number" min="0" step="0.01" name="shipping_amount" value="{{ (float) ($purchase->shipping_amount ?? 0) }}"></label>
+                                                        <div class="ux-two-col">
+                                                            <label class="ux-field"><span class="ux-label">Ongkir</span><input class="ux-input" type="number" min="0" step="0.01" name="shipping_amount" value="{{ (float) ($purchase->shipping_amount ?? 0) }}"></label>
+                                                            <label class="ux-field"><span class="ux-label">Perlakuan Ongkir</span><select class="ux-select" name="shipping_accounting_treatment"><option value="inventory" @selected(($purchase->shipping_accounting_treatment ?? 'inventory') === 'inventory')>Masuk HPP Persediaan</option><option value="expense" @selected(($purchase->shipping_accounting_treatment ?? 'inventory') === 'expense')>Beban Ongkir Pembelian</option></select></label>
+                                                        </div>
                                                         <label class="ux-field"><span class="ux-label">Catatan</span><textarea class="ux-textarea" name="note" rows="2">{{ $purchase->note }}</textarea></label>
                                                         <button class="ux-btn ux-btn-primary" type="submit">Simpan Perubahan Draft</button>
                                                     </form>
@@ -396,18 +628,33 @@
                                                     @else
                                                         <form method="POST" action="{{ route('admin.supplier-purchases.request-approval', $purchase) }}" data-ajax-form="1">
                                                             @csrf
-                                                            <button class="ux-btn ux-btn-primary" type="submit">{{ $purchaseRejectedApproval ? 'Ajukan Ulang Persetujuan' : 'Ajukan Persetujuan' }}</button>
+                                                            <button class="ux-btn ux-btn-primary" type="submit">{{ ($purchaseRejectedApproval || $purchaseStaleApproval) ? 'Ajukan Ulang Persetujuan' : 'Ajukan Persetujuan' }}</button>
                                                         </form>
                                                         <div class="ux-footnote">Owner perlu menyetujui draft.</div>
                                                     @endif
+                                                    <form method="POST" action="{{ route('admin.supplier-purchases.cancel', $purchase) }}" data-ajax-form="1">
+                                                        @csrf
+                                                        <button class="ux-btn ux-btn-danger" type="submit" onclick="return confirm('Batalkan draft pembelian ini?')">Batalkan Draft</button>
+                                                    </form>
                                                 </div>
                                             </div>
                                         @endif
+                                        <div class="ux-footnote">
+                                            <a class="text-blue-700 font-semibold" href="{{ route('admin.supplier-purchases.show', $purchase) }}">Detail PO</a>
+                                            <span class="text-slate-300 mx-2">|</span>
+                                            <a class="text-blue-700 font-semibold" href="{{ route('admin.supplier-purchases.pdf', $purchase) }}">Cetak PO PDF</a>
+                                            <span class="text-slate-300 mx-2">|</span>
+                                            <form method="POST" action="{{ route('admin.supplier-purchases.duplicate', $purchase) }}" style="display:inline;">
+                                                @csrf
+                                                <button class="text-blue-700 font-semibold" type="submit" onclick="return confirm('Duplikasi pembelian ini menjadi draft baru?')">Duplikasi Draft</button>
+                                            </form>
+                                        </div>
                                         @if((float) ($purchase->remaining_amount ?? 0) > 0)
                                             @if($purchase->status !== 'draft' || $purchaseApproved)
                                                 <form method="POST" action="{{ route('admin.supplier-purchases.pay', $purchase) }}" data-ajax-form="1" class="ux-inline-form ux-payment-section">
                                                     @csrf
                                                     <input class="ux-input" type="number" min="1" step="0.01" name="amount" placeholder="Nominal" required>
+                                                    <input class="ux-input" type="text" name="payment_reference" placeholder="No ref / bukti bayar">
                                                     <select class="ux-select" name="payment_method" required>
                                                         <option value="cash">cash</option>
                                                         <option value="transfer">transfer</option>
@@ -491,7 +738,9 @@
                         <form method="POST" action="{{ route('admin.supplier-purchases.store') }}" class="ux-form-grid" data-ajax-form="1">
                             @csrf
                             <label class="ux-field"><span class="ux-label">Supplier</span><select class="ux-select" name="supplier_id" id="supplier-purchase-supplier" required><option value="">Pilih supplier</option>@foreach($supplierOptions as $supplierOption)<option value="{{ $supplierOption->id }}">{{ $supplierOption->name }} ({{ $supplierOption->code }})</option>@endforeach</select></label>
-                            <div class="ux-two-col"><label class="ux-field"><span class="ux-label">Tanggal Order</span><input class="ux-input" type="date" name="ordered_at" value="{{ now()->toDateString() }}" required></label><label class="ux-field"><span class="ux-label">Termin Pembelian (Hari)</span><input class="ux-input" type="number" min="0" max="365" name="payment_term_days" id="purchase-term-days" value="0"></label></div>
+                            <div class="ux-two-col"><label class="ux-field"><span class="ux-label">No Invoice Supplier</span><input class="ux-input" name="supplier_invoice_number" placeholder="Opsional"></label><label class="ux-field"><span class="ux-label">No Surat Jalan</span><input class="ux-input" name="delivery_note_number" placeholder="Opsional"></label></div>
+                            <div class="ux-two-col"><label class="ux-field"><span class="ux-label">Tanggal Order</span><input class="ux-input" type="date" name="ordered_at" id="purchase-ordered-at" value="{{ now()->toDateString() }}" required></label><label class="ux-field"><span class="ux-label">Termin Pembelian (Hari)</span><input class="ux-input" type="number" min="0" max="365" name="payment_term_days" id="purchase-term-days" value="0"></label></div>
+                            <label class="ux-field"><span class="ux-label">Jatuh Tempo Manual</span><input class="ux-input" type="date" name="due_date" id="purchase-due-date"><span class="ux-help">Opsional. Jika diisi, tanggal ini dipakai sebagai jatuh tempo.</span></label>
                             <div class="ux-mini-box">
                                 <div class="ux-mini-head">
                                     <span class="ux-label">Tambah Produk</span>
@@ -527,8 +776,16 @@ Masker Medis | 50 | 18000"></textarea>
                                 <span class="ux-help">Untuk order besar, paste dari Excel/CSV. Format per baris: Nama Produk | Qty | Harga. Bisa pakai pemisah tab, titik koma, koma, atau garis vertikal.</span>
                             </label>
                             <div class="ux-two-col"><label class="ux-field"><span class="ux-label">Diskon</span><input class="ux-input" type="number" min="0" step="0.01" name="discount_amount" value="0"></label><label class="ux-field"><span class="ux-label">Pajak</span><input class="ux-input" type="number" min="0" step="0.01" name="tax_amount" value="0"></label></div>
-                            <label class="ux-field"><span class="ux-label">Ongkir</span><input class="ux-input" type="number" min="0" step="0.01" name="shipping_amount" value="0"></label>
+                            <div class="ux-two-col">
+                                <label class="ux-field"><span class="ux-label">Ongkir</span><input class="ux-input" type="number" min="0" step="0.01" name="shipping_amount" value="0"></label>
+                                <label class="ux-field"><span class="ux-label">Perlakuan Ongkir</span><select class="ux-select" name="shipping_accounting_treatment"><option value="inventory" selected>Masuk HPP Persediaan</option><option value="expense">Beban Ongkir Pembelian</option></select></label>
+                            </div>
                             <div class="ux-two-col"><label class="ux-field"><span class="ux-label">Bayar Dimuka / DP</span><input class="ux-input" type="number" min="0" step="0.01" name="down_payment_amount" value="0"></label><label class="ux-field"><span class="ux-label">Metode DP</span><select class="ux-select" name="down_payment_method"><option value="cash">cash</option><option value="transfer">transfer</option><option value="debit">debit</option><option value="qris">qris</option><option value="e_wallet">e_wallet</option></select></label></div>
+                            <div class="ux-draft-summary" id="purchase-draft-summary">
+                                <div><span>Item</span><strong id="draft-summary-items">0 barang</strong></div>
+                                <div><span>Total sementara</span><strong id="draft-summary-total">Rp 0</strong></div>
+                                <div><span>Estimasi jatuh tempo</span><strong id="draft-summary-due">-</strong></div>
+                            </div>
                             <div class="ux-footnote">Setelah draft disimpan, ajukan persetujuan owner dari daftar pembelian.</div>
                             <button class="ux-btn ux-btn-primary ux-btn-block" type="submit">Simpan Draft Pembelian</button>
                         </form>
@@ -549,6 +806,12 @@ Masker Medis | 50 | 18000"></textarea>
             const itemQty = document.getElementById('draft-item-qty');
             const itemCost = document.getElementById('draft-item-cost');
             const addItemBtn = document.getElementById('add-draft-item');
+            const orderedAt = document.getElementById('purchase-ordered-at');
+            const termDays = document.getElementById('purchase-term-days');
+            const manualDue = document.getElementById('purchase-due-date');
+            const summaryItems = document.getElementById('draft-summary-items');
+            const summaryTotal = document.getElementById('draft-summary-total');
+            const summaryDue = document.getElementById('draft-summary-due');
             let itemIndex = 0;
 
             const formatRupiah = (value) => new Intl.NumberFormat('id-ID', {
@@ -573,9 +836,24 @@ Masker Medis | 50 | 18000"></textarea>
             }[char]));
 
             const refreshDraftTotal = () => {
-                const total = Array.from(itemWrap?.querySelectorAll('[data-line-total]') || [])
+                const rows = Array.from(itemWrap?.querySelectorAll('[data-line-total]') || []);
+                const total = rows
                     .reduce((sum, row) => sum + Number(row.dataset.lineTotal || 0), 0);
                 if (itemTotal) itemTotal.textContent = formatRupiah(total);
+                if (summaryItems) summaryItems.textContent = `${rows.length} barang`;
+                if (summaryTotal) summaryTotal.textContent = formatRupiah(total);
+                if (summaryDue) {
+                    const explicitDue = manualDue?.value || '';
+                    if (explicitDue) {
+                        summaryDue.textContent = new Date(`${explicitDue}T00:00:00`).toLocaleDateString('id-ID');
+                    } else if (orderedAt?.value) {
+                        const date = new Date(`${orderedAt.value}T00:00:00`);
+                        date.setDate(date.getDate() + Math.max(Number(termDays?.value || 0), 0));
+                        summaryDue.textContent = date.toLocaleDateString('id-ID');
+                    } else {
+                        summaryDue.textContent = '-';
+                    }
+                }
                 if (itemEmpty) itemEmpty.style.display = itemWrap?.querySelector('[data-draft-item="1"]') ? 'none' : 'block';
             };
 
@@ -635,6 +913,7 @@ Masker Medis | 50 | 18000"></textarea>
                     }
                 }
             }));
+            [orderedAt, termDays, manualDue].forEach((input) => input?.addEventListener('input', refreshDraftTotal));
             bindRemoveButtons();
             refreshDraftTotal();
 

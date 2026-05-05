@@ -4,6 +4,7 @@ use App\Enums\UserRole;
 use App\Models\CashierAuditLog;
 use App\Models\ApprovalRequest;
 use App\Models\Category;
+use App\Models\JournalEntry;
 use App\Models\PosHold;
 use App\Models\Product;
 use App\Models\Sale;
@@ -129,6 +130,32 @@ test('checkout succeeds and decrements stock', function () {
 
     expect(Sale::query()->count())->toBe(1);
     expect((int) $product->fresh()->stock)->toBe(8);
+    expect(JournalEntry::query()->where('event', 'sale_posted')->count())->toBe(1);
+});
+
+test('owner can open accounting reports after pos posting', function () {
+    $owner = makeUserWithRole(UserRole::Owner->value);
+    $product = makeProductWithStock(10);
+
+    $this->actingAs($owner)
+        ->post(route('pos.checkout'), [
+            'customer_name' => 'Laporan Akuntansi POS',
+            'discount_amount' => 0,
+            'tax_amount' => 0,
+            'paid_amount' => 15000,
+            'payment_method' => 'cash',
+            'status' => 'paid',
+            'checkout_token' => 'token-accounting-report-1',
+            'items' => [
+                ['product_id' => $product->id, 'quantity' => 1, 'discount_amount' => 0],
+            ],
+        ])
+        ->assertRedirect();
+
+    $this->actingAs($owner)
+        ->get(route('admin.accounting.reports'))
+        ->assertOk()
+        ->assertSee('Trial Balance');
 });
 
 test('checkout fails on duplicate checkout token', function () {
@@ -226,6 +253,7 @@ test('checkout paid supports split payment and stores breakdown', function () {
     expect((float) $sale->paid_amount)->toBe(15000.0);
     expect(is_array($sale->payment_breakdown))->toBeTrue();
     expect(count($sale->payment_breakdown))->toBe(2);
+    expect(JournalEntry::query()->where('event', 'sale_posted')->count())->toBe(1);
 });
 
 test('checkout rejects split payment rows with zero amount', function () {

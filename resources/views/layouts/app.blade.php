@@ -28,7 +28,7 @@
             $activeBranchName = \App\Models\Branch::query()->whereKey($activeBranchId)->value('name');
         }
     @endphp
-    <div class="mobile-menu md:hidden" x-data="{ open: false }">
+    <div class="mobile-menu md:hidden">
         <div class="mobile-menu-bar">
             <a href="{{ route('dashboard') }}" class="flex mr-auto items-center">
                 <img
@@ -37,12 +37,21 @@
                     style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.1);padding:2px;display:block;"
                 >
             </a>
-            <a href="javascript:;" @click="open = !open">
+            <button type="button" id="mobile-menu-toggle" class="mobile-menu-toggle" aria-expanded="false" aria-controls="mobile-nav-drawer">
                 <i data-feather="bar-chart-2" class="w-8 h-8 text-white transform -rotate-90"></i>
-            </a>
+            </button>
         </div>
-        <div x-show="open" class="bg-theme-1 border-t border-theme-24 py-3 px-3">
-            @include('layouts.navigation')
+
+        <div id="mobile-drawer-backdrop" class="mobile-drawer-backdrop" hidden></div>
+
+        <div
+            id="mobile-nav-drawer"
+            class="mobile-drawer-panel bg-theme-1 border-t border-theme-24"
+            hidden
+        >
+            <div class="py-3 px-3">
+                @include('layouts.navigation')
+            </div>
         </div>
     </div>
 
@@ -66,7 +75,7 @@
 
         <div class="content">
             <div class="top-bar app-topbar">
-                <div class="-intro-x breadcrumb mr-auto hidden sm:flex">
+                <div class="-intro-x breadcrumb mr-auto hidden sm:flex app-breadcrumb">
                     <a href="{{ route('dashboard') }}">Application</a>
                     <i data-feather="chevron-right" class="breadcrumb__icon"></i>
                     @php
@@ -77,6 +86,8 @@
                             $breadcrumbLabel = 'Point of Sale';
                         } elseif (request()->routeIs('reports.*')) {
                             $breadcrumbLabel = 'Laporan';
+                        } elseif (request()->routeIs('admin.accounting.*')) {
+                            $breadcrumbLabel = 'Akuntansi';
                         } elseif (request()->routeIs('customers.*')) {
                             $breadcrumbLabel = 'Pelanggan';
                         } elseif (request()->routeIs('audit-logs.*')) {
@@ -105,8 +116,8 @@
                     @endif
                 </div>
 
-                <div class="intro-x dropdown w-8 h-8 relative">
-                    <a href="{{ route('profile.edit') }}" class="w-8 h-8 rounded-full overflow-hidden shadow-lg image-fit zoom-in bg-theme-1 text-white flex items-center justify-center font-bold">
+                <div class="intro-x dropdown w-8 h-8 relative app-topbar-profile-wrap">
+                    <a href="{{ route('profile.edit') }}" class="w-8 h-8 rounded-full overflow-hidden image-fit zoom-in bg-theme-1 text-white flex items-center justify-center font-bold app-topbar-profile">
                         {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
                     </a>
                 </div>
@@ -124,12 +135,12 @@
             @endif
 
             @isset($header)
-                <div class="mt-6">
+                <div class="mt-8 app-page-header">
                     {{ $header }}
                 </div>
             @endisset
 
-            <div class="mt-5">
+            <div class="mt-6 app-page-content">
                 {{ $slot }}
             </div>
         </div>
@@ -169,6 +180,80 @@
 
             window.addEventListener('load', renderIcons);
             document.addEventListener('livewire:navigated', renderIcons);
+
+            const toggle = document.getElementById('mobile-menu-toggle');
+            const drawer = document.getElementById('mobile-nav-drawer');
+            const backdrop = document.getElementById('mobile-drawer-backdrop');
+            const closeDrawer = () => {
+                if (!toggle || !drawer || !backdrop) return;
+                toggle.setAttribute('aria-expanded', 'false');
+                drawer.hidden = true;
+                backdrop.hidden = true;
+                document.body.classList.remove('mobile-drawer-open');
+            };
+            const normalizeMobileNav = () => {
+                if (!drawer) return;
+                const submenus = drawer.querySelectorAll('li > ul');
+                submenus.forEach((submenu) => {
+                    submenu.classList.remove('menu__sub-open', 'side-menu__sub-open');
+                    submenu.style.display = 'none';
+                });
+            };
+            const openDrawer = () => {
+                if (!toggle || !drawer || !backdrop) return;
+                normalizeMobileNav();
+                toggle.setAttribute('aria-expanded', 'true');
+                drawer.hidden = false;
+                backdrop.hidden = false;
+                document.body.classList.add('mobile-drawer-open');
+            };
+            if (toggle && drawer && backdrop) {
+                toggle.addEventListener('click', function () {
+                    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+                    if (expanded) closeDrawer(); else openDrawer();
+                });
+                backdrop.addEventListener('click', closeDrawer);
+                drawer.addEventListener('click', function (event) {
+                    const submitButton = event.target.closest('button[type=\"submit\"]');
+                    if (submitButton) {
+                        closeDrawer();
+                        return;
+                    }
+
+                    const link = event.target.closest('a');
+                    if (!link) return;
+
+                    const href = (link.getAttribute('href') || '').trim().toLowerCase();
+                    const isToggleLink = href === '' || href === '#' || href === 'javascript:;' || href === 'javascript:void(0)';
+                    if (isToggleLink) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+
+                        const li = link.closest('li');
+                        const submenu = li ? li.querySelector(':scope > ul') : null;
+                        if (!submenu) return;
+
+                        const isOpen = submenu.classList.contains('menu__sub-open') || submenu.classList.contains('side-menu__sub-open');
+                        if (isOpen) {
+                            submenu.classList.remove('menu__sub-open', 'side-menu__sub-open');
+                            submenu.style.display = 'none';
+                        } else {
+                            submenu.classList.add('menu__sub-open', 'side-menu__sub-open');
+                            submenu.style.display = 'block';
+                        }
+                        return;
+                    }
+
+                    if (!isToggleLink) {
+                        closeDrawer();
+                    }
+                }, true);
+                window.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape') closeDrawer();
+                });
+                normalizeMobileNav();
+            }
         })();
     </script>
 </body>

@@ -23,6 +23,7 @@ Dokumen ini merangkum status fitur POS saat ini dalam kategori:
 | Manajemen Hutang Pelanggan | Sudah | Modul hutang/cicilan pelanggan, pembayaran bertahap, status sisa & overdue tersedia. |
 | Template Struk Custom | Partial | Branding dasar ada, payment link/QR dinamis lanjutan belum penuh. |
 | Fitur POS Premium | Sudah | Split payment + hold/reservasi + checkout cicilan tenor sudah tersedia. |
+| Akuntansi Inti (Jurnal, Laporan, Buku Besar) | Sudah | Posting otomatis dari pembelian supplier, pembayaran, retur, dan POS sudah berjalan + halaman audit akuntansi tersedia. |
 
 ## Prioritas Implementasi Berikutnya
 
@@ -38,3 +39,11 @@ Dokumen ini merangkum status fitur POS saat ini dalam kategori:
 - Ada audit log untuk aksi kritikal.
 - Ada test feature utama (happy path + guardrail).
 - Masuk changelog + runbook operasional jika menyentuh scheduler/ops.
+
+## Final Baseline (Akuntansi + Supplier)
+
+- UI konsisten: spacing, topbar, tombol, tabel, pagination pada modul akuntansi dan supplier sudah diseragamkan.
+- Alur supplier end-to-end: draft pembelian -> edit -> ajukan approval -> approve/reject -> penerimaan -> pembayaran -> pelacakan sisa hutang.
+- Approval tercatat: status pending/approved/rejected muncul di daftar dan detail, termasuk riwayat proses.
+- Posting akuntansi otomatis: jurnal debit-kredit terbentuk dari event utama operasional.
+- Data demo konsisten: seeder supplier/pembelian realistis dan seragam untuk uji pagination.
