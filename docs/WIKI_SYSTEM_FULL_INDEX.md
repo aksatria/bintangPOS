@@ -29,3 +29,6 @@ Halaman ini merangkum seluruh area sistem BINTANG POS.
 2. [Troubleshooting](./WIKI_TROUBLESHOOTING.md)
 3. [Runbook Rilis & Monitoring](./POST_DEPLOY_MONITORING.md)
 4. [Incident Response](./WIKI_INCIDENT_RESPONSE.md)
+5. [Quick Start](./WIKI_QUICK_START.md)
+6. [Checklist Harian & Mingguan](./WIKI_DAILY_WEEKLY_CHECKLIST.md)
+7. [Template UAT Sign-off](./WIKI_UAT_SIGNOFF_TEMPLATE.md)
