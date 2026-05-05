@@ -387,6 +387,47 @@
                         <span class="ss-label">KPI Mutasi: Discrepancy Warning (%)</span>
                         <input type="number" step="0.1" min="0" max="100" name="stock_transfer_kpi_discrepancy_warning_pct" class="ss-input" value="{{ old('stock_transfer_kpi_discrepancy_warning_pct', (float) data_get($approvalRules, 'stock_transfer_kpi.discrepancy_warning_pct', 5)) }}">
                     </label>
+                    <label class="ss-field">
+                        <span class="ss-label">3-Way Matching Tolerance (%)</span>
+                        <input type="number" step="0.1" min="0" max="20" name="supplier_three_way_tolerance_pct" class="ss-input" value="{{ old('supplier_three_way_tolerance_pct', (float) data_get($approvalRules, 'supplier_three_way_tolerance_pct', 2)) }}">
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">Reorder Lookback (hari)</span>
+                        <input type="number" min="7" max="180" name="reorder_lookback_days" class="ss-input" value="{{ old('reorder_lookback_days', (int) data_get($approvalRules, 'reorder_lookback_days', 30)) }}">
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">Reorder Lead Time (hari)</span>
+                        <input type="number" min="1" max="90" name="reorder_lead_days" class="ss-input" value="{{ old('reorder_lead_days', (int) data_get($approvalRules, 'reorder_lead_days', 7)) }}">
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">Reorder Safety Stock (hari)</span>
+                        <input type="number" min="0" max="90" name="reorder_safety_days" class="ss-input" value="{{ old('reorder_safety_days', (int) data_get($approvalRules, 'reorder_safety_days', 3)) }}">
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">Routing: Purchase ke Owner jika >=</span>
+                        <div class="ss-rupiah-wrap">
+                            <span class="ss-rupiah-prefix">Rp</span>
+                            <input type="text" inputmode="numeric" data-rupiah name="approval_routing_supplier_purchase_threshold" class="ss-input ss-rupiah-input" value="{{ old('approval_routing_supplier_purchase_threshold', (int) data_get($approvalRules, 'approval_routing.supplier_purchase_threshold', 10000000)) }}">
+                        </div>
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">Routing: Payment ke Owner jika >=</span>
+                        <div class="ss-rupiah-wrap">
+                            <span class="ss-rupiah-prefix">Rp</span>
+                            <input type="text" inputmode="numeric" data-rupiah name="approval_routing_supplier_payment_threshold" class="ss-input ss-rupiah-input" value="{{ old('approval_routing_supplier_payment_threshold', (int) data_get($approvalRules, 'approval_routing.supplier_payment_threshold', 5000000)) }}">
+                        </div>
+                    </label>
+                    <label class="ss-field">
+                        <span class="ss-label">Routing: Export ke Owner jika >=</span>
+                        <div class="ss-rupiah-wrap">
+                            <span class="ss-rupiah-prefix">Rp</span>
+                            <input type="text" inputmode="numeric" data-rupiah name="approval_routing_report_export_threshold" class="ss-input ss-rupiah-input" value="{{ old('approval_routing_report_export_threshold', (int) data_get($approvalRules, 'approval_routing.report_export_threshold', 100000000)) }}">
+                        </div>
+                    </label>
+                    <label class="ss-field ss-col-span-2 inline-flex items-center gap-2 mt-1">
+                        <input type="checkbox" name="supplier_three_way_enforced" value="1" @checked(old('supplier_three_way_enforced', (bool) data_get($approvalRules, 'supplier_three_way_enforced', false)))>
+                        <span class="text-sm text-slate-700">Aktifkan hard-enforcement 3-way matching sebelum pembayaran supplier</span>
+                    </label>
                 </div>
             </section>
 

@@ -131,6 +131,7 @@ class StoreSettingController extends Controller
                     'discrepancy_warning_pct' => (float) $validated['stock_transfer_kpi_discrepancy_warning_pct'],
                 ],
                 'supplier_three_way_tolerance_pct' => (float) ($validated['supplier_three_way_tolerance_pct'] ?? 2),
+                'supplier_three_way_enforced' => $request->boolean('supplier_three_way_enforced'),
                 'reorder_lookback_days' => (int) ($validated['reorder_lookback_days'] ?? 30),
                 'reorder_lead_days' => (int) ($validated['reorder_lead_days'] ?? 7),
                 'reorder_safety_days' => (int) ($validated['reorder_safety_days'] ?? 3),

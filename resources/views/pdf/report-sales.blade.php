@@ -30,6 +30,12 @@
         Pengeluaran: Rp {{ number_format($expenses, 0, ',', '.') }} |
         Laba: Rp {{ number_format($profit, 0, ',', '.') }}
     </p>
+    @if(isset($mom))
+        <p>
+            MoM Omzet: {{ is_null(data_get($mom, 'omzet_pct')) ? '-' : number_format((float) data_get($mom, 'omzet_pct', 0), 2, ',', '.').'%' }} |
+            MoM Laba: {{ is_null(data_get($mom, 'profit_pct')) ? '-' : number_format((float) data_get($mom, 'profit_pct', 0), 2, ',', '.').'%' }}
+        </p>
+    @endif
 
     <table>
         <thead>

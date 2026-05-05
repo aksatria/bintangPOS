@@ -97,34 +97,7 @@ class ReportController extends Controller
 
         $profit = $omzet - $modal - $expenses;
 
-        $monthStart = now()->startOfMonth();
-        $prevMonthStart = now()->subMonthNoOverflow()->startOfMonth();
-        $prevMonthEnd = now()->subMonthNoOverflow()->endOfMonth();
-        $currentMonthOmzet = (float) $this->applyBranchScope(Sale::query(), $request->user())
-            ->where('status', SaleStatus::Paid->value)
-            ->whereBetween('sold_at', [$monthStart, now()->endOfDay()])
-            ->sum('total_amount');
-        $prevMonthOmzet = (float) $this->applyBranchScope(Sale::query(), $request->user())
-            ->where('status', SaleStatus::Paid->value)
-            ->whereBetween('sold_at', [$prevMonthStart, $prevMonthEnd])
-            ->sum('total_amount');
-        $monthExpenses = (float) $this->applyBranchScope(Expense::query(), $request->user())
-            ->whereBetween('date', [$monthStart->toDateString(), now()->toDateString()])
-            ->sum('amount');
-        $prevMonthExpenses = (float) $this->applyBranchScope(Expense::query(), $request->user())
-            ->whereBetween('date', [$prevMonthStart->toDateString(), $prevMonthEnd->toDateString()])
-            ->sum('amount');
-        $currentMonthProfit = $currentMonthOmzet - $monthExpenses;
-        $prevMonthProfit = $prevMonthOmzet - $prevMonthExpenses;
-
-        $mom = [
-            'omzet_current' => $currentMonthOmzet,
-            'omzet_previous' => $prevMonthOmzet,
-            'omzet_pct' => $prevMonthOmzet > 0 ? (($currentMonthOmzet - $prevMonthOmzet) / $prevMonthOmzet) * 100 : null,
-            'profit_current' => $currentMonthProfit,
-            'profit_previous' => $prevMonthProfit,
-            'profit_pct' => $prevMonthProfit > 0 ? (($currentMonthProfit - $prevMonthProfit) / $prevMonthProfit) * 100 : null,
-        ];
+        $mom = $this->buildMomSummary($request);
 
         $trendMonths = collect(range(5, 0))->map(fn ($offset) => now()->subMonths($offset)->startOfMonth())
             ->push(now()->startOfMonth())
@@ -226,6 +199,7 @@ class ReportController extends Controller
         }
 
         $filename = sprintf('laporan-penjualan-%s-%s.xlsx', $startDate->format('Ymd'), $endDate->format('Ymd'));
+        $mom = $this->buildMomSummary($request);
         $this->logReportExport($request, 'report_export_excel', $selectedIds, $startDate, $endDate, $paymentMethod, $qrisReference, $selectedCount, $selectedTotal, $exportReason, '');
 
         return Excel::download(new SalesReportExport(
@@ -240,6 +214,8 @@ class ReportController extends Controller
                 'exported_by' => (string) ($request->user()?->name ?? '-'),
                 'export_reason' => $exportReason,
                 'approved_by' => '',
+                'mom_omzet_pct' => $mom['omzet_pct'],
+                'mom_profit_pct' => $mom['profit_pct'],
             ],
             (int) (ActiveBranchContext::resolveBranchId($request->user()) ?? 0),
             (bool) ($request->user()?->hasAnyRole(['owner']) ?? false)
@@ -266,6 +242,7 @@ class ReportController extends Controller
             return $response;
         }
         $this->logReportExport($request, 'report_export_pdf', $selectedIds, $startDate, $endDate, $paymentMethod, $qrisReference, $selectedCount, $selectedTotal, $exportReason, '');
+        $mom = $this->buildMomSummary($request);
 
         $sales = $this->applyBranchScope(Sale::query(), $request->user())
             ->with(['items', 'user:id,name', 'customer:id,name'])
@@ -325,6 +302,7 @@ class ReportController extends Controller
                 'selected_count' => $selectedCount,
                 'selected_total' => $selectedTotal,
             ],
+            'mom' => $mom,
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download(sprintf('laporan-penjualan-%s-%s.pdf', $startDate->format('Ymd'), $endDate->format('Ymd')));
@@ -533,6 +511,34 @@ class ReportController extends Controller
         }
 
         return $assignee?->id ? (int) $assignee->id : null;
+    }
+
+    private function buildMomSummary(Request $request): array
+    {
+        $monthStart = now()->startOfMonth();
+        $prevMonthStart = now()->subMonthNoOverflow()->startOfMonth();
+        $prevMonthEnd = now()->subMonthNoOverflow()->endOfMonth();
+        $currentMonthOmzet = (float) $this->applyBranchScope(Sale::query(), $request->user())
+            ->where('status', SaleStatus::Paid->value)
+            ->whereBetween('sold_at', [$monthStart, now()->endOfDay()])
+            ->sum('total_amount');
+        $prevMonthOmzet = (float) $this->applyBranchScope(Sale::query(), $request->user())
+            ->where('status', SaleStatus::Paid->value)
+            ->whereBetween('sold_at', [$prevMonthStart, $prevMonthEnd])
+            ->sum('total_amount');
+        $monthExpenses = (float) $this->applyBranchScope(Expense::query(), $request->user())
+            ->whereBetween('date', [$monthStart->toDateString(), now()->toDateString()])
+            ->sum('amount');
+        $prevMonthExpenses = (float) $this->applyBranchScope(Expense::query(), $request->user())
+            ->whereBetween('date', [$prevMonthStart->toDateString(), $prevMonthEnd->toDateString()])
+            ->sum('amount');
+        $currentMonthProfit = $currentMonthOmzet - $monthExpenses;
+        $prevMonthProfit = $prevMonthOmzet - $prevMonthExpenses;
+
+        return [
+            'omzet_pct' => $prevMonthOmzet > 0 ? (($currentMonthOmzet - $prevMonthOmzet) / $prevMonthOmzet) * 100 : null,
+            'profit_pct' => $prevMonthProfit > 0 ? (($currentMonthProfit - $prevMonthProfit) / $prevMonthProfit) * 100 : null,
+        ];
     }
 
     private function enforceExportRateLimit(Request $request): void
