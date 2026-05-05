@@ -1,4 +1,4 @@
-name: UAT Role Automation
+name: Quality Gate
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  uat-role-tests:
+  quality-gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,12 +17,14 @@ jobs:
           tools: composer:v2
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
+      - name: Validate composer
+        run: composer validate --strict
       - name: Prepare env
         run: |
           cp .env.example .env
           php artisan key:generate
+          php artisan config:clear
       - name: Run migration
         run: php artisan migrate --force
-      - name: Run role-based UAT automation
-        run: php artisan test tests/Feature/UatRoleAutomationTest.php tests/Feature/SystemSafetyAndOpsTest.php
-
+      - name: Run full test suite
+        run: php artisan test

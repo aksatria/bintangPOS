@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\LoginTwoFactorCodeNotification;
+use Illuminate\Support\Facades\Notification;
 
 test('login screen can be rendered', function () {
     $response = $this->get('/login');
@@ -17,6 +19,50 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
+    $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('owner login requires two factor challenge', function () {
+    Notification::fake();
+
+    $user = User::factory()->create([
+        'role' => 'owner',
+    ]);
+
+    $response = $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect(route('two-factor.challenge', absolute: false));
+    $this->assertGuest();
+
+    Notification::assertSentTo($user, LoginTwoFactorCodeNotification::class);
+});
+
+test('owner can complete two factor challenge and login', function () {
+    Notification::fake();
+
+    $user = User::factory()->create([
+        'role' => 'owner',
+    ]);
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $code = null;
+    Notification::assertSentTo($user, LoginTwoFactorCodeNotification::class, function ($notification) use (&$code) {
+        $code = $notification->code;
+        return true;
+    });
+
+    $response = $this->post('/two-factor-challenge', [
+        'code' => $code,
+    ]);
+
+    $this->assertAuthenticatedAs($user);
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
