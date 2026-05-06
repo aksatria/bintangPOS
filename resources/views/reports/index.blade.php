@@ -215,7 +215,7 @@
                         <div id="payment-method-donut" class="report-payment-donut" aria-label="Komposisi metode pembayaran">
                             <div class="report-payment-donut-center">
                                 <div id="report-donut-pct" class="report-payment-donut-pct">0%</div>
-                                <div class="report-payment-donut-caption">Kontribusi Terbesar</div>
+                                <div id="report-donut-method" class="report-payment-donut-caption">-</div>
                                 <div id="report-donut-total" class="report-payment-donut-total">Rp 0</div>
                             </div>
                         </div>
@@ -233,7 +233,12 @@
                             <tbody>
                                 @forelse(($paymentSummary ?? collect()) as $row)
                                     <tr>
-                                        <td class="font-semibold text-slate-800">{{ strtoupper(str_replace('_', ' ', (string) $row['method'])) }}</td>
+                                        <td class="font-semibold text-slate-800">
+                                            <span class="report-payment-method-label" data-method="{{ (string) $row['method'] }}">
+                                                <span class="report-payment-method-dot" aria-hidden="true"></span>
+                                                {{ strtoupper(str_replace('_', ' ', (string) $row['method'])) }}
+                                            </span>
+                                        </td>
                                         <td class="text-left">{{ number_format((int) $row['count'], 0, ',', '.') }}</td>
                                         <td class="text-left font-semibold">Rp {{ number_format((float) $row['amount'], 0, ',', '.') }}</td>
                                         <td class="text-left">{{ number_format((float) $row['pct'], 1, ',', '.') }}%</td>
@@ -774,34 +779,71 @@
                     }
                 });
             });
-
             const rows = @json(collect($paymentSummary ?? [])->values());
-            const omzetPaid = Number(@json((float) ($omzet ?? 0)));
             const donut = document.getElementById('payment-method-donut');
             const pctEl = document.getElementById('report-donut-pct');
+            const donutMethodEl = document.getElementById('report-donut-method');
             const totalEl = document.getElementById('report-donut-total');
-            if (!donut || !pctEl || !totalEl || !Array.isArray(rows) || rows.length === 0) return;
+            if (!donut || !pctEl || !donutMethodEl || !totalEl || !Array.isArray(rows) || rows.length === 0) return;
 
-            const palette = ['#2563eb', '#16a34a', '#f59e0b', '#0ea5e9', '#7c3aed', '#ef4444'];
+            const methodPalette = {
+                cash: '#22c55e',
+                qris: '#2563eb',
+                debit: '#f59e0b',
+                transfer: '#8b5cf6',
+                e_wallet: '#ec4899',
+                mixed: '#f97316',
+            };
+            const fallbackPalette = ['#0ea5e9', '#14b8a6', '#84cc16', '#eab308', '#f43f5e', '#6366f1'];
+            let fallbackIdx = 0;
             let start = 0;
             const parts = [];
-            rows.forEach((row, idx) => {
+            const colorByMethod = {};
+            rows.forEach((row) => {
+                const method = String(row.method || '').trim().toLowerCase();
                 const pct = Math.max(0, Number(row.pct || 0));
                 const end = Math.min(100, start + pct);
-                const color = palette[idx % palette.length];
+                const color = methodPalette[method] || fallbackPalette[(fallbackIdx++) % fallbackPalette.length];
+                colorByMethod[method] = color;
                 parts.push(`${color} ${start}% ${end}%`);
                 start = end;
             });
             if (start < 100) {
                 parts.push(`#e2e8f0 ${start}% 100%`);
             }
-
             donut.style.background = `conic-gradient(${parts.join(', ')})`;
 
-            const top = rows[0] || { pct: 0 };
+            const top = rows[0] || { pct: 0, amount: 0, method: '-' };
             const formatter = new Intl.NumberFormat('id-ID');
+            const methodLabel = (method) => String(method || '').replaceAll('_', ' ').toUpperCase();
             pctEl.textContent = `${Number(top.pct || 0).toFixed(1).replace('.', ',')}%`;
-            totalEl.textContent = `Rp ${formatter.format(Math.round(omzetPaid))}`;
+            donutMethodEl.textContent = methodLabel(top.method || '-');
+            totalEl.textContent = `Rp ${formatter.format(Math.round(Number(top.amount || 0)))}`;
+
+            document.querySelectorAll('.report-payment-method-label[data-method]').forEach((el) => {
+                const method = String(el.getAttribute('data-method') || '').trim().toLowerCase();
+                const color = colorByMethod[method] || methodPalette[method] || '#64748b';
+                el.style.setProperty('--report-method-color', color);
+            });
+
         })();
     </script>
+    <style>
+        .report-payment-method-label {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .report-payment-method-dot {
+            width: .7rem;
+            height: .7rem;
+            border-radius: 999px;
+            background: var(--report-method-color, #64748b);
+            border: 2px solid #fff;
+            flex: 0 0 auto;
+        }
+
+    </style>
 </x-app-layout>
+

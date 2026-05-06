@@ -576,6 +576,32 @@
                                         <p class="mt-1 text-[11px] text-slate-500" x-show="qrisReferenceAuto">
                                             Referensi otomatis terisi. Anda bisa ubah manual jika ada nomor dari aplikasi pembayaran.
                                         </p>
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            <button type="button" class="btn-danger-lite !h-9" :disabled="qrisDynamicLoading || qrisDynamicAmount() <= 0" @click="generateMidtransQrisSandbox()">
+                                                <span x-text="qrisDynamicLoading ? 'Membuat QRIS...' : 'Buat QRIS Midtrans Sandbox'"></span>
+                                            </button>
+                                            <button type="button" class="btn-danger-lite !h-9" :disabled="qrisDynamicLoading || !qrisDynamicOrderId" @click="checkMidtransQrisSandboxStatus()">
+                                                Cek Status QRIS
+                                            </button>
+                                        </div>
+                                        <template x-if="qrisDynamicError">
+                                            <p class="mt-2 text-xs text-rose-600" x-text="qrisDynamicError"></p>
+                                        </template>
+                                        <template x-if="qrisDynamicOrderId">
+                                            <p class="mt-2 text-xs text-slate-600">
+                                                Order: <strong x-text="qrisDynamicOrderId"></strong>
+                                                <span> | Status: </span><strong x-text="String(qrisDynamicStatus || 'pending').toUpperCase()"></strong>
+                                            </p>
+                                        </template>
+                                        <template x-if="qrisDynamicExpiryAt">
+                                            <p class="mt-1 text-xs text-slate-500">Berlaku sampai: <span x-text="qrisDynamicExpiryAt"></span></p>
+                                        </template>
+                                        <template x-if="qrisDynamicQrUrl">
+                                            <div class="mt-3 inline-flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3">
+                                                <img :src="qrisDynamicQrUrl" alt="QRIS Midtrans Sandbox" class="w-44 h-44 object-contain">
+                                                <span class="text-[11px] text-slate-500">Scan QR dari aplikasi e-wallet/banking (sandbox).</span>
+                                            </div>
+                                        </template>
                                     </div>
                                 </template>
                                 <div class="pos-field pos-field--wide" style="grid-column: 1 / -1;">
@@ -973,10 +999,20 @@
                 inputModalValue: '',
                 inputResolver: null,
                 quickRefundEndpoint: @json(route('pos.quick-refund')),
+                qrisMidtransCreateEndpoint: @json(route('pos.qris.midtrans.create')),
+                qrisMidtransStatusEndpoint: @json(route('pos.qris.midtrans.status')),
                 quickRefundInvoice: '',
                 quickRefundReason: '',
                 quickRefundSubmitting: false,
+                qrisDynamicLoading: false,
+                qrisDynamicError: '',
+                qrisDynamicQrUrl: '',
+                qrisDynamicOrderId: '',
+                qrisDynamicStatus: '',
+                qrisDynamicExpiryAt: '',
                 barcodeAutoAddLock: false,
+                barcodeLastHitCode: '',
+                barcodeLastHitAt: 0,
                 serverFallbackVisible: true,
                 checkoutDraftKey: '',
                 checkoutDraftLegacyKey: '',
@@ -1061,6 +1097,92 @@
                 },
                 numberFormat(value) {
                     return Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                },
+
+                qrisDynamicAmount() {
+                    if (this.status !== 'paid') return 0;
+                    if (this.splitPaymentEnabled) {
+                        const row = (Array.isArray(this.splitPayments) ? this.splitPayments : [])
+                            .find(item => String(item?.method || '') === 'qris');
+                        return Math.max(0, Number(row?.amount || 0));
+                    }
+                    if (String(this.paymentMethod || '') === 'qris') {
+                        return Math.max(0, Number(this.total || 0));
+                    }
+
+                    return 0;
+                },
+
+                async generateMidtransQrisSandbox() {
+                    const amount = Math.round(Number(this.qrisDynamicAmount() || 0));
+                    if (amount <= 0) {
+                        this.pushToast('warning', 'QRIS Tidak Valid', 'Nominal QRIS harus lebih dari 0.');
+                        return;
+                    }
+                    this.qrisDynamicLoading = true;
+                    this.qrisDynamicError = '';
+                    try {
+                        const res = await fetch(this.qrisMidtransCreateEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') || '',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body: JSON.stringify({
+                                amount,
+                                invoice_hint: this.checkoutToken || '',
+                            }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok || !data?.ok) {
+                            const extra = data?.detail ? ` (${typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)})` : '';
+                            throw new Error(String(data?.message || 'Gagal membuat QRIS Midtrans Sandbox.') + extra);
+                        }
+                        this.qrisDynamicQrUrl = String(data.qr_url || '');
+                        this.qrisDynamicOrderId = String(data.order_id || '');
+                        this.qrisDynamicStatus = String(data.transaction_status || 'pending');
+                        this.qrisDynamicExpiryAt = String(data.expiry_at || '');
+                        this.qrisReferenceId = String(data.reference_id || data.order_id || this.qrisReferenceId || '');
+                        this.qrisIssuer = String(data.issuer || 'midtrans-sandbox');
+                        this.qrisReferenceAuto = true;
+                        this.pushToast('success', 'QRIS Dibuat', 'QRIS Midtrans Sandbox berhasil dibuat.');
+                    } catch (error) {
+                        this.qrisDynamicError = String(error?.message || 'Gagal membuat QRIS Midtrans Sandbox.');
+                        this.pushToast('error', 'Gagal Membuat QRIS', this.qrisDynamicError);
+                    } finally {
+                        this.qrisDynamicLoading = false;
+                    }
+                },
+
+                async checkMidtransQrisSandboxStatus() {
+                    if (!this.qrisDynamicOrderId) return;
+                    this.qrisDynamicLoading = true;
+                    this.qrisDynamicError = '';
+                    try {
+                        const url = `${this.qrisMidtransStatusEndpoint}?order_id=${encodeURIComponent(this.qrisDynamicOrderId)}`;
+                        const res = await fetch(url, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+                        const data = await res.json();
+                        if (!res.ok || !data?.ok) {
+                            const extra = data?.detail ? ` (${typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)})` : '';
+                            throw new Error(String(data?.message || 'Gagal cek status QRIS Midtrans Sandbox.') + extra);
+                        }
+                        this.qrisDynamicStatus = String(data.transaction_status || 'pending');
+                        this.qrisDynamicExpiryAt = String(data.expiry_at || this.qrisDynamicExpiryAt || '');
+                        this.qrisIssuer = String(data.issuer || this.qrisIssuer || 'midtrans-sandbox');
+                        this.pushToast('info', 'Status QRIS', `Status terbaru: ${String(this.qrisDynamicStatus || '').toUpperCase()}`);
+                    } catch (error) {
+                        this.qrisDynamicError = String(error?.message || 'Gagal cek status QRIS Midtrans Sandbox.');
+                        this.pushToast('error', 'Cek Status Gagal', this.qrisDynamicError);
+                    } finally {
+                        this.qrisDynamicLoading = false;
+                    }
                 },
 
                 onPaidInput(event) {
@@ -1457,27 +1579,27 @@
 
                     this.addToCart(pick);
                     this.pushToast('success', 'Produk Ditambahkan', pick.name);
-                    if (this.barcodeMode) {
-                        this.search = '';
-                        this.fetchProducts();
-                    }
+                    // Jangan reset query otomatis agar hasil pencarian tidak "kedip hilang".
+                    // Kasir bisa scan/ketik berikutnya secara manual sesuai kebutuhan.
                 },
 
                 tryBarcodeAutoAdd() {
                     const query = String(this.search || '').trim().toLowerCase();
                     if (!this.barcodeMode || !query || this.barcodeAutoAddLock) return;
+                    const now = Date.now();
+                    if (this.barcodeLastHitCode === query && (now - Number(this.barcodeLastHitAt || 0)) < 1500) return;
                     const exact = (this.products || []).find(p =>
                         String(p.barcode || '').toLowerCase() === query ||
                         String(p.sku || '').toLowerCase() === query
                     );
                     if (!exact) return;
                     this.barcodeAutoAddLock = true;
+                    this.barcodeLastHitCode = query;
+                    this.barcodeLastHitAt = now;
                     this.addToCart(exact);
                     this.pushToast('success', 'Scan Berhasil', `${exact.name} masuk keranjang.`);
-                    this.search = '';
                     setTimeout(() => {
                         this.barcodeAutoAddLock = false;
-                        this.fetchProducts();
                     }, 120);
                 },
 
@@ -1495,6 +1617,11 @@
                     this.qrisReferenceId = '';
                     this.qrisIssuer = '';
                     this.qrisReferenceAuto = false;
+                    this.qrisDynamicError = '';
+                    this.qrisDynamicQrUrl = '';
+                    this.qrisDynamicOrderId = '';
+                    this.qrisDynamicStatus = '';
+                    this.qrisDynamicExpiryAt = '';
                     this.recalculate();
                     this.clearCheckoutDraft();
                     this.pushToast('warning', 'Keranjang Dikosongkan', 'Semua item dihapus dari keranjang.');
@@ -1526,6 +1653,11 @@
                     this.qrisReferenceId = '';
                     this.qrisIssuer = '';
                     this.qrisReferenceAuto = false;
+                    this.qrisDynamicError = '';
+                    this.qrisDynamicQrUrl = '';
+                    this.qrisDynamicOrderId = '';
+                    this.qrisDynamicStatus = '';
+                    this.qrisDynamicExpiryAt = '';
                     this.splitValidationError = '';
                     this.methodLimitError = '';
                     this.recalculate();
@@ -2837,7 +2969,3 @@
         }
     </script>
 </x-app-layout>
-
-
-
-

@@ -43,8 +43,14 @@ Route::middleware(['auth', 'branch.access'])->group(function () {
 
     Route::middleware('role:owner,admin,kasir')->group(function () {
         Route::get('/kasir/pos', [PosController::class, 'index'])->name('pos.index');
+        Route::get('/kasir/pos-friendly', [PosController::class, 'responsive'])->name('pos.responsive');
         Route::get('/kasir/search-products', [PosController::class, 'search'])->name('pos.search-products');
+        Route::get('/kasir/search-customers', [PosController::class, 'searchCustomers'])->name('pos.search-customers');
+        Route::get('/kasir/shift-summary', [PosController::class, 'shiftSummary'])->name('pos.shift-summary');
+        Route::post('/kasir/validate-stock', [PosController::class, 'validateStock'])->name('pos.validate-stock');
         Route::post('/kasir/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+        Route::post('/kasir/qris/midtrans/create', [PosController::class, 'createMidtransQris'])->name('pos.qris.midtrans.create');
+        Route::get('/kasir/qris/midtrans/status', [PosController::class, 'checkMidtransQrisStatus'])->name('pos.qris.midtrans.status');
         Route::post('/kasir/quick-refund', [PosController::class, 'quickRefund'])->name('pos.quick-refund');
         Route::post('/kasir/audit-event', [PosController::class, 'auditEvent'])->name('pos.audit-event');
         Route::post('/kasir/reconcile-shift', [PosController::class, 'reconcileShift'])->name('pos.reconcile-shift');

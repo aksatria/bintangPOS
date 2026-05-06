@@ -4,6 +4,8 @@ use App\Enums\UserRole;
 use App\Models\CashierAuditLog;
 use App\Models\ApprovalRequest;
 use App\Models\Category;
+use App\Models\Customer;
+use App\Models\CustomerDebt;
 use App\Models\JournalEntry;
 use App\Models\PosHold;
 use App\Models\Product;
@@ -11,6 +13,7 @@ use App\Models\Sale;
 use App\Models\StoreSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 function makeUserWithRole(string $role): User
 {
@@ -45,6 +48,176 @@ test('kasir can access pos page', function () {
     $this->actingAs($cashier)
         ->get(route('pos.index'))
         ->assertOk();
+});
+
+test('kasir can access pos friendly page', function () {
+    $cashier = makeUserWithRole(UserRole::Cashier->value);
+
+    $this->actingAs($cashier)
+        ->get(route('pos.responsive'))
+        ->assertOk()
+        ->assertSee('Kasir Modern');
+});
+
+test('kasir can create dynamic qris with midtrans sandbox endpoint', function () {
+    config()->set('services.midtrans.enabled', true);
+    config()->set('services.midtrans.is_sandbox', true);
+    config()->set('services.midtrans.server_key', 'SB-Mid-server-test');
+
+    Http::fake([
+        'https://api.sandbox.midtrans.com/v2/charge' => Http::response([
+            'order_id' => 'POS-QRIS-TEST-001',
+            'transaction_id' => 'trx-test-001',
+            'transaction_status' => 'pending',
+            'expiry_time' => '2026-05-06 12:30:00',
+            'actions' => [
+                ['name' => 'generate-qr-code', 'url' => 'https://api.sandbox.midtrans.com/v2/qris/test-qr.png'],
+            ],
+        ], 201),
+    ]);
+
+    $cashier = makeUserWithRole(UserRole::Cashier->value);
+
+    $this->actingAs($cashier)
+        ->postJson(route('pos.qris.midtrans.create'), [
+            'amount' => 15000,
+            'invoice_hint' => 'TOKEN123',
+        ])
+        ->assertOk()
+        ->assertJsonPath('ok', true)
+        ->assertJsonPath('issuer', 'midtrans-sandbox')
+        ->assertJsonPath('transaction_status', 'pending');
+});
+
+test('kasir can check dynamic qris midtrans sandbox status', function () {
+    config()->set('services.midtrans.enabled', true);
+    config()->set('services.midtrans.is_sandbox', true);
+    config()->set('services.midtrans.server_key', 'SB-Mid-server-test');
+
+    Http::fake([
+        'https://api.sandbox.midtrans.com/v2/POS-QRIS-TEST-001/status' => Http::response([
+            'order_id' => 'POS-QRIS-TEST-001',
+            'transaction_id' => 'trx-test-001',
+            'transaction_status' => 'settlement',
+            'payment_type' => 'qris',
+            'expiry_time' => '2026-05-06 12:30:00',
+        ], 200),
+    ]);
+
+    $cashier = makeUserWithRole(UserRole::Cashier->value);
+
+    $this->actingAs($cashier)
+        ->getJson(route('pos.qris.midtrans.status', ['order_id' => 'POS-QRIS-TEST-001']))
+        ->assertOk()
+        ->assertJsonPath('ok', true)
+        ->assertJsonPath('transaction_status', 'settlement')
+        ->assertJsonPath('issuer', 'midtrans-sandbox');
+});
+
+test('midtrans live mode rejects sandbox server key', function () {
+    config()->set('services.midtrans.enabled', true);
+    config()->set('services.midtrans.mode', 'live');
+    config()->set('services.midtrans.server_key', 'SB-Mid-server-test');
+
+    $cashier = makeUserWithRole(UserRole::Cashier->value);
+
+    $this->actingAs($cashier)
+        ->postJson(route('pos.qris.midtrans.create'), [
+            'amount' => 10000,
+            'invoice_hint' => 'LIVEKEYTEST',
+        ])
+        ->assertStatus(422)
+        ->assertJsonPath('ok', false)
+        ->assertJsonPath('message', 'Mode LIVE terdeteksi, tapi server key masih sandbox (SB-).');
+});
+
+test('search customers includes debt summary and debt items', function () {
+    $cashier = makeUserWithRole(UserRole::Cashier->value);
+    $customer = Customer::query()->create([
+        'branch_id' => $cashier->branch_id,
+        'name' => 'Customer Hutang Test',
+        'phone' => '081299998877',
+        'email' => 'hutang.test@example.com',
+        'is_active' => true,
+    ]);
+
+    CustomerDebt::query()->create([
+        'branch_id' => $cashier->branch_id,
+        'customer_id' => $customer->id,
+        'created_by' => $cashier->id,
+        'number' => 'HUT-001',
+        'debt_date' => now()->toDateString(),
+        'due_date' => now()->addDays(1)->toDateString(),
+        'principal_amount' => 100000,
+        'paid_amount' => 0,
+        'remaining_amount' => 100000,
+        'status' => 'active',
+    ]);
+    CustomerDebt::query()->create([
+        'branch_id' => $cashier->branch_id,
+        'customer_id' => $customer->id,
+        'created_by' => $cashier->id,
+        'number' => 'HUT-002',
+        'debt_date' => now()->toDateString(),
+        'due_date' => now()->addDays(2)->toDateString(),
+        'principal_amount' => 200000,
+        'paid_amount' => 0,
+        'remaining_amount' => 200000,
+        'status' => 'overdue',
+    ]);
+
+    $res = $this->actingAs($cashier)
+        ->getJson(route('pos.search-customers', ['q' => 'Customer Hutang']))
+        ->assertOk()
+        ->json('data');
+
+    $row = collect($res)->firstWhere('id', $customer->id);
+    expect($row)->not->toBeNull();
+    expect((int) ($row['debt_count'] ?? 0))->toBe(2);
+    expect((float) ($row['debt_total'] ?? 0))->toBe(300000.0);
+    expect(is_array($row['debt_items'] ?? null))->toBeTrue();
+    expect(count($row['debt_items'] ?? []))->toBeGreaterThan(0);
+});
+
+test('checkout success sends telegram notification when enabled', function () {
+    putenv('TELEGRAM_BOT_TOKEN=test-token-123');
+    putenv('TELEGRAM_CHAT_ID=5711502419');
+    $_ENV['TELEGRAM_BOT_TOKEN'] = 'test-token-123';
+    $_ENV['TELEGRAM_CHAT_ID'] = '5711502419';
+    $_SERVER['TELEGRAM_BOT_TOKEN'] = 'test-token-123';
+    $_SERVER['TELEGRAM_CHAT_ID'] = '5711502419';
+
+    Http::fake([
+        'https://api.telegram.org/*' => Http::response(['ok' => true], 200),
+    ]);
+
+    $cashier = makeUserWithRole(UserRole::Cashier->value);
+    $product = makeProductWithStock(10);
+
+    StoreSetting::query()->updateOrCreate(
+        ['id' => 1],
+        ['name' => 'Store Test Telegram', 'telegram_enabled' => true, 'telegram_override_chat_id' => null]
+    );
+
+    $this->actingAs($cashier)
+        ->post(route('pos.checkout'), [
+            'customer_name' => 'Notif Telegram Test',
+            'discount_amount' => 0,
+            'tax_amount' => 0,
+            'paid_amount' => 15000,
+            'payment_method' => 'cash',
+            'status' => 'paid',
+            'checkout_token' => 'token-telegram-checkout-1',
+            'items' => [
+                ['product_id' => $product->id, 'quantity' => 1, 'discount_amount' => 0],
+            ],
+        ])
+        ->assertRedirect();
+
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'api.telegram.org')
+            && str_contains($request->url(), '/sendMessage');
+    });
 });
 
 test('kasir cannot access notification settings and telegram test route', function () {
