@@ -75,3 +75,28 @@
 
 - Gunakan dokumen `docs/UAT_CEPAT_FITUR_FINAL_2026-05-06.md`.
 - Dokumen ini berisi langkah uji cepat untuk OTP login, supplier 3-way matching, reorder suggestion, report MoM, dan approval auto-routing.
+
+## 16) Kenapa metode bayar di POS Friendly tidak bisa dipilih?
+
+- Pastikan status transaksi dan validasi split payment tidak mengunci tombol bayar.
+- Jika UI stale, lakukan hard refresh browser.
+
+## 17) Kenapa keranjang kanan tidak muncul di iPad Air/Pro?
+
+- Layout tablet aktif untuk lebar `>=768px`; jika menggunakan split-view sempit, sistem bisa fallback ke mode drawer.
+- Coba keluar dari split-view atau perlebar area aplikasi.
+
+## 18) Kenapa scan barcode terasa dobel / terlalu sensitif?
+
+- Sistem memakai guard anti-duplikat singkat.
+- Arahkan kamera stabil 1 barcode per item; untuk input manual gunakan fallback di modal scan.
+
+## 19) Kenapa produk baru tidak langsung habis (infinite list)?
+
+- POS Friendly memakai infinite scroll.
+- Scroll ke bawah untuk memuat batch produk berikutnya.
+
+## 20) Kalau internet putus saat checkout POS, apa aman?
+
+- Aman, transaksi masuk antrean `Pending Sync`.
+- Saat internet kembali, sistem retry sinkron otomatis.

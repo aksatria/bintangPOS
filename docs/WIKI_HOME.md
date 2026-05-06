@@ -26,6 +26,17 @@ Jawaban singkat untuk pertanyaan umum dan kendala lapangan.
 5. [Index Sistem Lengkap](./WIKI_SYSTEM_FULL_INDEX.md)  
 Navigasi seluruh modul sistem (operasional, kontrol, keuangan, dan runbook).
 
+## POS Friendly (Mobile & Tablet)
+
+1. [SOP Ringkas POS Friendly](./POS_FRIENDLY_SOP_RINGKAS.md)  
+Panduan operasional harian kasir (scan, split payment, pending, offline queue).
+
+2. [SOP Printable A4 POS Friendly](./POS_FRIENDLY_SOP_PRINT_A4.md)  
+Versi singkat siap cetak untuk meja kasir.
+
+3. [Checklist Final Acceptance POS Friendly](./POS_FINAL_ACCEPTANCE_CHECKLIST.md)  
+Daftar verifikasi final sebelum rilis/operasional penuh.
+
 ## Dokumen Governance
 
 1. [Final Acceptance Supplier & Akuntansi](./FINAL_ACCEPTANCE_SUPPLIER_ACCOUNTING.md)
