@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'BINTANG') }}</title>
+    <title>BINTANG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -1015,11 +1015,11 @@
     <main class="shell">
         <div class="nav">
             <div class="brand">
-                <img src="{{ asset('build/img/logo.png') }}" alt="BINTANG POS" class="brand-logo">
+                <img src="./assets/logo.png" alt="BINTANG POS" class="brand-logo">
             </div>
             <div class="nav-actions">
-                <a href="{{ route('login') }}" class="btn btn-soft">Login</a>
-                <a href="{{ route('dashboard') }}" class="btn btn-main">Masuk Dashboard</a>
+                <a href="#login" class="btn btn-soft">Login</a>
+                <a href="#dashboard" class="btn btn-main">Masuk Dashboard</a>
             </div>
         </div>
 
@@ -1029,8 +1029,8 @@
                 <h1>Ruang kerja operasional harian: kasir, stok, pembelian, pelanggan, dan laporan dalam satu alur.</h1>
                 <p class="lead">Halaman ini disusun sebagai gambaran internal penggunaan BINTANG POS. Fokusnya menjelaskan ruang lingkup fitur yang ada sekarang, termasuk komponen yang terlihat langsung di layar dan komponen kontrol yang berjalan di belakang layar.</p>
                 <div class="hero-actions">
-                    <a href="{{ route('login') }}" class="btn btn-primary">Mulai dari Login</a>
-                    <a href="{{ route('dashboard') }}" class="btn btn-outline-primary">Lanjut ke Dashboard</a>
+                    <a href="#login" class="btn btn-primary">Mulai dari Login</a>
+                    <a href="#dashboard" class="btn btn-outline-primary">Lanjut ke Dashboard</a>
                 </div>
                 <div class="stats">
                     <article class="stat">
@@ -1160,28 +1160,28 @@
             <h3>Preview Modul</h3>
             <div class="preview-grid">
                 <article class="preview-card">
-                    <img src="{{ asset('build/img/login.jpg') }}" alt="Preview POS">
+                    <img src="./assets/login.jpg" alt="Preview POS">
                     <div class="meta">
                         <b><span class="mini-icon" style="color:#0b5ad1;"><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm2 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zm2 3v2h4v-2H7z"/></svg></span>POS & Checkout</b>
                         <span><span class="preview-short">Transaksi harian dari pencarian produk sampai struk selesai dengan validasi stok real-time.</span><details><summary>Baca detail</summary><span class="preview-detail">Modul ini dipakai kasir untuk transaksi harian dari awal sampai struk keluar. Alurnya mencakup pencarian produk (nama/SKU/barcode), input qty, validasi stok real-time, diskon sesuai otorisasi, lalu pembayaran (cash, transfer, debit, e-wallet, QRIS, atau kombinasi/split payment). Jika transaksi belum selesai, kasir bisa simpan sebagai hold lalu lanjutkan nanti. Setelah pembayaran sukses, sistem menyimpan detail transaksi, update stok, dan menyiapkan struk/riwayat penjualan.</span></details></span>
                     </div>
                 </article>
                 <article class="preview-card">
-                    <img src="{{ asset('build/img/products/stock-img-01.png') }}" alt="Preview Stok">
+                    <img src="./assets/stock-img-01.png" alt="Preview Stok">
                     <div class="meta">
                         <b><span class="mini-icon" style="color:#1a8f66;"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4zm0 3l9 4 9-4v7l-9 4-9-4v-7z"/></svg></span>Produk & Stok</b>
                         <span><span class="preview-short">Pengelolaan barang, harga, dan stok agar data sistem tetap sinkron dengan stok fisik.</span><details><summary>Baca detail</summary><span class="preview-detail">Bagian ini mengelola data barang dan pergerakan stok supaya jumlah fisik dan sistem tetap selaras. Fitur utamanya meliputi pengaturan kategori, SKU/barcode, harga beli-jual, stok minimum, serta pemantauan barang yang perlu perhatian. Untuk akurasi, tersedia proses opname dan penyesuaian stok, termasuk transfer antar cabang dengan alur approval sesuai role. Dampaknya: tim lebih cepat mendeteksi selisih stok dan mencegah kehabisan barang.</span></details></span>
                     </div>
                 </article>
                 <article class="preview-card">
-                    <img src="{{ asset('build/img/supplier/supplier-01.png') }}" alt="Preview Supplier">
+                    <img src="./assets/supplier-01.png" alt="Preview Supplier">
                     <div class="meta">
                         <b><span class="mini-icon" style="color:#d97706;"><svg viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13h-6v-6H9v6H3z"/></svg></span>Supplier & Pembelian</b>
                         <span><span class="preview-short">Siklus pengadaan dari input pembelian, penerimaan barang, sampai pembayaran termin.</span><details><summary>Baca detail</summary><span class="preview-detail">Modul ini mengatur siklus pengadaan dari pembuatan pembelian sampai pelunasan. Tim bisa mencatat item pembelian, kuantitas, nilai, status penerimaan barang (partial/full), lampiran dokumen (invoice/bukti), serta pembayaran bertahap (termin). Jika ada ketidaksesuaian, proses retur dan rekonsiliasi membantu menutup transaksi pembelian dengan lebih rapi. Ini penting untuk kontrol biaya, histori vendor, dan ketertelusuran dokumen.</span></details></span>
                     </div>
                 </article>
                 <article class="preview-card">
-                    <img src="{{ asset('build/img/customer/customer1.jpg') }}" alt="Preview Customer">
+                    <img src="./assets/customer1.jpg" alt="Preview Customer">
                     <div class="meta">
                         <b><span class="mini-icon" style="color:#7c3aed;"><svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/></svg></span>Pelanggan & Follow-up</b>
                         <span><span class="preview-short">Manajemen profil pelanggan, riwayat belanja, piutang, dan tindak lanjut komunikasi.</span><details><summary>Baca detail</summary><span class="preview-detail">Fokus modul ini adalah menjaga relasi pelanggan dan memantau kewajiban pembayaran. Data yang tersimpan mencakup profil pelanggan, histori belanja, status piutang, dan catatan follow-up. Tim bisa memantau pelanggan yang mendekati atau melewati jatuh tempo, mencatat pembayaran bertahap, serta melanjutkan tindak lanjut secara terstruktur. Hasilnya, pelayanan lebih personal dan risiko piutang macet bisa ditekan.</span></details></span>
@@ -1538,3 +1538,4 @@
     </script>
 </body>
 </html>
+
